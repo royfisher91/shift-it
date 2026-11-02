@@ -86,8 +86,8 @@ namespace KT.ShiftIt.Game
                 .SetAnchored(new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-48f, -34f), new Vector2(560f, 70f));
             _zone = Label.Create(_root, "Zone", 54, new Color(0.88f, 0.93f, 1f), TextAnchor.UpperCenter)
                 .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(900f, 70f));
-            _passes = Label.Create(_root, "Passes", 40, new Color(0.72f, 0.78f, 0.9f), TextAnchor.UpperCenter)
-                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -92f), new Vector2(900f, 56f));
+            _passes = Label.Create(_root, "Passes", 36, new Color(0.72f, 0.78f, 0.9f), TextAnchor.UpperCenter)
+                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -84f), new Vector2(760f, 46f));
 
             // ---------- transient ----------
             // Sits high and clear: it used to overlap the PERFECT pop at y=150 and, in Mode A,

@@ -282,7 +282,62 @@ canvas. It works, but a cleaner embed would drop it. Stage 4.
 
 ## 5. Sticky Keys / Filter Keys results
 
-*(pending — harness written, runs against the Windows build)*
+Tested against the real Windows build with `Tools/sticky_keys_test.py`, which reads the OS settings
+back rather than trusting the game. **Your machine was restored to exactly the state it was found
+in**, and every write used `fWinIni = 0` so nothing reached your user profile.
+
+Your machine's starting state: Sticky Keys and Filter Keys both **off**, and both activation
+shortcuts **off**. So the harness has to switch the shortcuts on itself before there is anything to
+test.
+
+| Case | While the game ran | After it closed | Verdict |
+|---|---|---|---|
+| Sticky Keys shortcut **ON**, closed properly | suppressed | **restored to ON** | **PASS** both ways |
+| Sticky Keys shortcut **OFF**, closed properly | left off | left off | **PASS** — the game never switches them *on* |
+| Shortcut **ON**, process **killed** | suppressed | still suppressed | correct: Windows gives a killed process no chance to run a quit handler |
+| ...then relaunched and closed properly | — | **restored to ON** | **PASS** — the crash is repaired by the next launch |
+
+### Why it matters that every throw is a Shift press
+
+Five throws is five Shift presses, which is precisely the Sticky Keys activation gesture. Without
+suppression a dialog would land on the player mid-run. With it, the shortcut is inert while the
+game is in front and theirs again the moment they close it or alt-tab away.
+
+### Two things I got wrong on the way, both worth recording
+
+**The first run reported "RESTORE NOT DONE" on every case, and that was my harness.** It closed the
+game with `proc.terminate()`, which on Windows is `TerminateProcess` — a hard kill. Unity never runs
+`OnApplicationQuit` after that, so the restore path was never exercised at all. Switching to a
+`WM_CLOSE` message — the real shutdown a player triggers — turned every one of those into a pass.
+A test that cannot reach the code it is testing reports failure just as confidently as a real bug.
+
+**The crash-recovery case then reported a false FAIL.** It required *both* shortcuts to come back,
+and Sticky Keys had in fact come back correctly. See below.
+
+### The one genuine gap: Filter Keys could not be switched on
+
+`SPI_SETFILTERKEYS` with `FKF_HOTKEYACTIVE` **returns 0 on this machine** — Windows rejects the
+write while the Filter Keys feature itself is off. I verified that directly, separately from the
+game. So the harness cannot create the "Filter Keys shortcut on" precondition, and the Filter Keys
+suppression path is **not directly proven**.
+
+What I can say honestly:
+
+- The same few lines handle both features, and the Sticky Keys half is proven end to end.
+- **Filter Keys cannot fire in this game anyway.** It needs Right Shift held for eight seconds, and
+  the longest hold the game can physically produce is **1.97 s** — measured, not estimated —
+  because the fuse runs out first. Mode A's 5 s cap is a second backstop behind that.
+
+So the requirement is met, but by two different routes: Sticky Keys by suppression (proven), Filter
+Keys by being unreachable (measured).
+
+### WebGL
+
+A browser cannot change Windows settings, so the build says so instead. The title screen carries the
+line *"Tip: if Windows pops up a Sticky Keys box, click Cancel — this game only taps Shift, never
+holds it."* — confirmed legible in the Edge screenshot. The edge-detected throws mean a Shift latched
+by Sticky Keys is still one throw, and that is proven in the browser too: held 1.6 s, score moved
+once.
 
 ---
 
@@ -372,7 +427,7 @@ into those missing ZIPs.
 
 Nothing has been pushed. Nothing has been created on GitHub.
 
-The repository is **597 KB of pure text with zero binary assets** — because every sprite and every
+The repository is **721 KB of pure text across 116 files, with zero binary assets** — because every sprite and every
 sound is generated in code, there is not one image or audio file in it. That is an unusually clean
 public repo and it sidesteps the licence question entirely.
 

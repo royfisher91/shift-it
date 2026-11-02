@@ -17,7 +17,7 @@ namespace KT.ShiftIt.Game
         // 5.6 put the five robots in a cramped band only 2.5 units tall; 6.3 spreads
         // them over the upper screen. The arc ANGLE is unchanged, so this alters how
         // Mode A looks and not how it plays - the measured balance still applies.
-        public const float ModeAArcRadius = 6.3f;
+        public const float ModeAArcRadius = 6.0f;
         // Was 1.35, which put the 2.05-unit fuse ring straight over the player's head.
         const float BombHeldY = 1.95f;
 

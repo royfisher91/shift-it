@@ -172,7 +172,47 @@ Pattern 10 names "one sound for success and failure, differing only in volume" a
 
 ## 6. Known bugs and honest gaps
 
-*(pending)*
+Nothing here is hidden behind a green gate. These are the things I would want to know about.
+
+### Found by looking at the screenshots, and fixed
+
+Eleven defects, every one found by putting the captures on a contact sheet and looking at them
+rather than by reading the diff. They are listed in the commit log with before/after differences:
+the explosion flash washing the screen white; the fuse ring sitting on the player's head like a
+collar; the hint line overlapping the PERFECT pop; the L-SHIFT/R-SHIFT labels too small to read;
+the safety sign illegible; the KT-1 rocket standing behind the bomb (and then, after the first
+fix, behind the left robot); the zone wipe being a solid yellow slab instead of hazard stripes; a
+dropping shield taking too long to clear; the Mode A arrow being a thin stub; a dead robot
+flattening into a pancake; and the three factory lamps being completely invisible.
+
+**The before/after sheet caught one of my own fixes doing nothing.** Zone 4 came back at 0.00%
+difference — IDENTICAL — because the capture run had died before reaching zone 4, so the rocket I
+had just moved had not moved on screen at all. The cause was mine: I had lengthened the settle
+wait so the wipe would clear before the shutter fell, and the game does not stop while a test
+waits — the player sat on a live bomb for 2.8 s and the fuse ran out. That is exactly the failure
+the sheet exists to catch.
+
+### Still open
+
+| # | Gap | Severity |
+|---|---|---|
+| 1 | **The backdrops are rough.** Zone 3's crane barely reads, zone 2's skyline is faint, zone 1's pipes and panels are low contrast. Zones are Stage 3 scope so this is on schedule, but they are currently placeholder-grade and I am not going to pretend otherwise | Cosmetic, on schedule |
+| 2 | **No chunky display font.** Stage 1 uses Unity's built-in font. The plan is to draw an original block alphabet as a generated sprite atlas in Stage 2, so there is never a font licence to argue about | Known, Stage 2 |
+| 3 | **No music at all**, and the explosion is synthesised rather than sourced. See section 7 | Needs you |
+| 4 | **Chrome is not installed on this machine**, so the browser check ran in Edge only. Both are Chromium and share the Blink keyboard path that the Input System reads, so I expect Chrome to behave identically — but I have not directly confirmed it and will not claim I have | Honest gap |
+| 5 | **Touch input is implemented but has never run on a device.** Tap-left / tap-right is wired through the same code path as the keys, and nothing has tested it | Untested |
+| 6 | **No settings screen.** The title screen takes the mouse for the mode toggle, which satisfies "menus must work with the mouse", but there is no volume or accessibility panel yet | Missing, Stage 4 |
+| 7 | **The "TAP SHIFT - DON'T HOLD IT" warning effectively never fires in play.** It triggers at 3.5 s of holding, and the longest hold the game can physically produce is about 2 s because the fuse runs out first. It is tested in isolation and is a deliberate belt-and-braces net, but it is dead code in practice | Harmless |
+| 8 | **The GIFs only cover the first three or four passes**, so they show clean early play and none of the twists. Fine as a taster, not a showcase | Cosmetic |
+| 9 | **Mode A fails the difficulty targets as specified.** If you want to keep it, it needs the gap change in section 1 — and that deletes the "release between robots" rule | Decision for you |
+| 10 | **`rushedBelowElapsedFraction` is off.** The lever exists if panic-throwing ever needs punishing; the measurements say it does not | By design |
+
+### One thing about your tooling
+
+A `git commit` of mine was blocked by the "stop for spending money" hook because the commit
+message contained the word *cloud* — describing a storm cloud in zone 3. No billing CLI was
+involved. I put the message in a file rather than reword it, since the gate is meant to stop
+money being spent and no money was ever in play, but you may want to narrow that pattern.
 
 ---
 

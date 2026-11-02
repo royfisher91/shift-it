@@ -16,19 +16,29 @@ mkdir -p "$SHEETS"
 
 step() { echo; echo "=================== $* ==================="; }
 
-step "1/4  create the scene"
-Tools/unity.sh scene -executeMethod KT.ShiftIt.EditorTools.BuildScript.CreateGameScene || exit 1
+step "0/5  EditMode suite: the simulation, the difficulty ramp and the bot itself"
+Tools/with_lock.sh 45 editmode -runTests -testPlatform EditMode
+EM=$?
+echo "editmode exit=$EM"
+if [ $EM -eq 75 ]; then echo "ABORTING: never got the machine lock."; exit 75; fi
+if [ $EM -ne 0 ]; then
+  echo "EditMode suite did not pass (exit $EM). Continuing to the builds anyway so the gate has"
+  echo "something playable, but the Stage 1 report must lead with this."
+fi
 
-step "2/4  PlayMode tests + captures (needs a graphics device and the foreground)"
-KT_GFX=1 KT_NEEDS=both Tools/unity.sh playmode -runTests -testPlatform PlayMode
+step "1/5  create the scene"
+Tools/with_lock.sh 40 scene -executeMethod KT.ShiftIt.EditorTools.BuildScript.CreateGameScene || exit 1
+
+step "2/5  PlayMode tests + captures (needs a graphics device and the foreground)"
+KT_GFX=1 KT_NEEDS=both Tools/with_lock.sh 40 playmode -runTests -testPlatform PlayMode
 PM=$?
 echo "playmode exit=$PM"
 
-step "3/4  builds"
-Tools/unity.sh buildwebgl -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWebGL || exit 1
-Tools/unity.sh buildwin   -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWindows || exit 1
+step "3/5  builds"
+Tools/with_lock.sh 40 buildwebgl -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWebGL || exit 1
+Tools/with_lock.sh 40 buildwin   -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWindows || exit 1
 
-step "4/4  review sheets and GIFs"
+step "4/5  review sheets and GIFs"
 python Tools/contact_sheet.py "$SHEETS/sheet1_zones.png" \
   "SHIFT IT! - overview: the four zones" 2 760 \
   "$REV/sheet_zones/zone1_factory_floor.png" "$REV/sheet_zones/zone2_rooftop.png" \
@@ -64,5 +74,6 @@ echo
 echo "=================== done ==================="
 echo "sheets and gifs: $SHEETS"
 echo "builds:          D:/KT/Builds/ShiftIt"
+[ $EM -ne 0 ] && echo "NOTE: the EditMode suite exited $EM - read it above."
 [ $PM -ne 0 ] && echo "NOTE: the PlayMode suite exited $PM - read its result above before trusting the captures."
 exit 0

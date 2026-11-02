@@ -65,6 +65,10 @@ namespace KT.ShiftIt.Game
             Input = new ShiftInput();
 
             // 5. presentation
+            // Timed, because every sprite in the game is generated here from 4x4-supersampled
+            // coverage and that is the one plausible load hitch in the WebGL build. Measured
+            // rather than assumed - if this number is large, Shapes is where to look.
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             Zones = ZoneBackdrop.Create(transform, Cam);
             Board = BoardView.Create(transform, Sim);
             Juice = Juice.Create(transform, Cam.transform);
@@ -79,8 +83,11 @@ namespace KT.ShiftIt.Game
             Board.EnsureLayout();
             Zones.Show(0);
 
+            sw.Stop();
             Debug.Log("[SHIFTIT] boot ok. mode=" + mode + " seed=" + seed +
-                      " sprites=" + Shapes.CachedCount + " accessibility=" + WindowsAccessibility.StatusLine);
+                      " sprites=" + Shapes.CachedCount +
+                      " build=" + sw.ElapsedMilliseconds + "ms" +
+                      " accessibility=" + WindowsAccessibility.StatusLine);
         }
 
         static string BestKey(ControlMode m) => m == ControlMode.LeftRight ? PrefBestB : PrefBestA;

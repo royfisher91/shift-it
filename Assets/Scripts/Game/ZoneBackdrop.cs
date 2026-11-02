@@ -173,16 +173,16 @@ namespace KT.ShiftIt.Game
             // The sign is a joke the player has to be able to READ. At the first size it was an
             // illegible yellow smudge, so it is bigger, higher-contrast and spaced out.
             Add(r, "SignPlate", Shapes.RoundedRect(300, 130, 12), new Color(0.93f, 0.88f, 0.26f), -70,
-                new Vector3(-7.3f, 3.15f, 0f), new Vector3(2.15f, 1.6f, 1f));
+                new Vector3(-7.8f, 2.0f, 0f), new Vector3(1.10f, 0.95f, 1f));
             Add(r, "SignEdge", Shapes.RoundedRectOutline(300, 130, 12, 8), new Color(0.12f, 0.11f, 0.07f), -69,
-                new Vector3(-7.3f, 3.15f, 0f), new Vector3(2.15f, 1.6f, 1f));
-            var l1 = Label.CreateWorld(r, "SignTop", new Vector3(-7.3f, 3.62f, 0f), 54,
+                new Vector3(-7.8f, 2.0f, 0f), new Vector3(1.10f, 0.95f, 1f));
+            var l1 = Label.CreateWorld(r, "SignTop", new Vector3(-7.8f, 2.33f, 0f), 34,
                                        new Color(0.10f, 0.09f, 0.06f));
             l1.SetText("DAYS WITHOUT");
-            var l2 = Label.CreateWorld(r, "SignMid", new Vector3(-7.3f, 3.26f, 0f), 54,
+            var l2 = Label.CreateWorld(r, "SignMid", new Vector3(-7.8f, 2.09f, 0f), 34,
                                        new Color(0.10f, 0.09f, 0.06f));
             l2.SetText("AN EXPLOSION");
-            var l3 = Label.CreateWorld(r, "SignNum", new Vector3(-7.3f, 2.74f, 0f), 104,
+            var l3 = Label.CreateWorld(r, "SignNum", new Vector3(-7.8f, 1.70f, 0f), 62,
                                        new Color(0.70f, 0.10f, 0.08f));
             l3.SetText("0");
         }

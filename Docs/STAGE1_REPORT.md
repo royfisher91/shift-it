@@ -91,6 +91,18 @@ on only 10 frames out of 116. You cannot ask someone to avoid a hazard they cann
 
 ---
 
+### What I cannot tell you
+
+I have not played this game, and I can't. Everything above is measurement: the difficulty curve
+lands in your bands, the deaths are varied, the risk/reward gradient is steep, and a run lasts about
+a minute. Those are the conditions under which an arcade game of this shape tends to be fun — they
+are not proof that it is.
+
+The build is the point of the gate. Play Mode B for five minutes and you will know more about
+whether it is fun than every number in this document.
+
+---
+
 ## 2. The difficulty curve is doing what it should
 
 `panic-throw: mean passes 10.8, mean score 11.1` against `skilled: mean passes 61.0, mean score 314.0`
@@ -372,7 +384,7 @@ the sheet exists to catch.
 | 3 | **No music at all**, and the explosion is synthesised rather than sourced. See section 7 | Needs you |
 | 4 | **Chrome is not installed on this machine**, so the browser check ran in Edge only. Both are Chromium and share the Blink keyboard path that the Input System reads, so I expect Chrome to behave identically — but I have not directly confirmed it and will not claim I have | Honest gap |
 | 5 | **Touch input is implemented but has never run on a device.** Tap-left / tap-right is wired through the same code path as the keys, and nothing has tested it | Untested |
-| 6 | **No settings screen.** The title screen takes the mouse for the mode toggle, which satisfies "menus must work with the mouse", but there is no volume or accessibility panel yet | Missing, Stage 4 |
+| 6 | **No settings screen, and no in-game quit.** The title screen takes the mouse for the mode toggle, which satisfies "menus must work with the mouse", but there is no volume or accessibility panel. The Windows build is borderless fullscreen, so a player's only way out is Alt+F4 — which does run the quit handler correctly (that is how the Sticky Keys restore was proven), but it should be a visible option | Missing, Stage 4 |
 | 7 | **The "TAP SHIFT - DON'T HOLD IT" warning effectively never fires in play.** It triggers at 3.5 s of holding, and the longest hold the game can physically produce is about 2 s because the fuse runs out first. It is tested in isolation and is a deliberate belt-and-braces net, but it is dead code in practice | Harmless |
 | 8 | **The GIFs only cover the first three or four passes**, so they show clean early play and none of the twists. Fine as a taster, not a showcase | Cosmetic |
 | 9 | **Mode A fails the difficulty targets as specified.** If you want to keep it, it needs the gap change in section 1 — and that deletes the "release between robots" rule | Decision for you |

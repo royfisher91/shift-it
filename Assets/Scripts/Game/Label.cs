@@ -21,12 +21,30 @@ namespace KT.ShiftIt.Game
         public Text Raw => _text;
 
         static Font _font;
+        static string _fontSource = "not loaded";
+
+        /// <summary>
+        /// Which font actually resolved. Exposed because a null font is the nastiest possible
+        /// failure here: UI Text with no font renders NOTHING, while the `text` property still
+        /// returns the right string - so every test that checks what the HUD says would pass
+        /// while the player saw a blank screen. That is precisely the failure
+        /// KT_QUALITY_LESSONS B4 warns about, so it is asserted rather than assumed.
+        /// </summary>
+        public static string FontSource => _fontSource;
+        public static bool FontLoaded => _font != null;
+
         static Font BuiltinFont()
         {
             if (_font != null) return _font;
-            // Unity 6 ships this; the OS-font fallback keeps a headless build safe.
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (_font == null) _font = Font.CreateDynamicFontFromOSFont("Arial", 48);
+            _fontSource = _font != null ? "LegacyRuntime.ttf" : null;
+            if (_font == null)
+            {
+                _font = Font.CreateDynamicFontFromOSFont("Arial", 48);
+                _fontSource = _font != null ? "OS Arial (fallback)" : "NONE - TEXT WILL BE INVISIBLE";
+            }
+            if (_font == null)
+                Debug.LogError("[SHIFTIT] no font could be loaded. All UI text will render blank.");
             return _font;
         }
 

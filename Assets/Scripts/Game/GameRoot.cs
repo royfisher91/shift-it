@@ -87,6 +87,7 @@ namespace KT.ShiftIt.Game
             Debug.Log("[SHIFTIT] boot ok. mode=" + mode + " seed=" + seed +
                       " sprites=" + Shapes.CachedCount +
                       " build=" + sw.ElapsedMilliseconds + "ms" +
+                      " font=" + Label.FontSource +
                       " accessibility=" + WindowsAccessibility.StatusLine);
         }
 

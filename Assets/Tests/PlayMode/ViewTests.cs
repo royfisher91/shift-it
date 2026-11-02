@@ -109,6 +109,50 @@ namespace KT.ShiftIt.PlayTests
         // =====================================================================
 
         [UnityTest]
+        public IEnumerator TheRenderedFrameIsNotBlank_InEveryPhaseAndEveryZone()
+        {
+            // Reads the PIXELS, which is the only check that can catch a dead camera, a canvas
+            // rendering nowhere, or a font that silently failed. Every other test in this file
+            // stands on this one.
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(4);
+
+            float title = Capture.FrameContrast(root.Cam);
+            Debug.Log("[SHIFTIT] frame contrast, title screen: " + title.ToString("0.0000"));
+            Assert.Greater(title, 0.02f, "the title screen rendered as a flat colour");
+
+            yield return Tap(_kb.leftShiftKey);
+            yield return Frames(4);
+            float play = Capture.FrameContrast(root.Cam);
+            Debug.Log("[SHIFTIT] frame contrast, in play:     " + play.ToString("0.0000"));
+            Assert.Greater(play, 0.02f, "the playfield rendered as a flat colour");
+
+            // And every zone must draw something, not just zone 1.
+            for (int z = 1; z < 4; z++)
+            {
+                root.Zones.Show(z);
+                yield return Frames(3);
+                float c = Capture.FrameContrast(root.Cam);
+                Debug.Log("[SHIFTIT] frame contrast, zone " + (z + 1) + ":      " + c.ToString("0.0000"));
+                Assert.Greater(c, 0.02f, "zone " + (z + 1) + " rendered as a flat colour");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator AFontActuallyLoaded_OrEveryTextCheckIsWorthless()
+        {
+            // UI Text with a null font renders nothing at all while `text` still returns the
+            // right string, so every other assertion in this file would pass over a blank
+            // screen. This test is what makes the rest of them mean anything.
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.IsTrue(Label.FontLoaded,
+                "no font loaded - all UI text would be invisible. Source: " + Label.FontSource);
+            Assert.IsNotNull(root.Hud.ScoreText);
+            Debug.Log("[SHIFTIT] font in use: " + Label.FontSource);
+        }
+
+        [UnityTest]
         public IEnumerator Hud_ShowsTheActualScoreComboPassesAndZone()
         {
             var root = Boot(Plain(), ControlMode.LeftRight);

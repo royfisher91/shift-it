@@ -302,6 +302,36 @@ namespace KT.ShiftIt.PlayTests
                   "GAME OVER - BOOM!, the reason line, score and passes, personal best, blinking PRESS SHIFT TO RETRY.");
         }
 
+        [UnityTest]
+        public IEnumerator Capture_TitleAndQuitConfirm()
+        {
+            Capture.Session = "sheet_ui";
+            var root = Boot(Plain(), ControlMode.LeftRight, 4242);
+            yield return Frames(4);
+            Shoot("ui_title_modeB_only",
+                  "TITLE - Mode B ships, so the line states the controls instead of offering a " +
+                  "toggle. Logo, tagline, blinking PRESS SHIFT TO START, Sticky Keys tip.");
+
+            yield return Tap(_kb.leftShiftKey);
+            yield return Frames(6);
+
+            // ESC opens the quit confirm, and the game PAUSES behind it.
+            yield return Tap(_kb.escapeKey);
+            yield return Frames(6);
+            Assert.IsTrue(root.QuitConfirmOpen, "Escape did not open the quit confirm");
+            Shoot("ui_quit_confirm",
+                  "ESC - quit confirm. The game is PAUSED behind it, so the fuse stops. Two real " +
+                  "mouse buttons; ESC again quits, SHIFT carries on.");
+
+            // And it goes away again.
+            float t = 0f;
+            while (t < 0.4f) { t += Time.deltaTime; yield return null; }
+            yield return Tap(_kb.leftShiftKey);
+            yield return Frames(4);
+            Assert.IsFalse(root.QuitConfirmOpen, "Shift did not dismiss the quit confirm");
+            Shoot("ui_after_resume", "...and SHIFT puts the player straight back into the run.");
+        }
+
         // =====================================================================
         //  GIF frame sequences, one per mode
         // =====================================================================

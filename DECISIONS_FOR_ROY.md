@@ -284,3 +284,69 @@ public repo.
 In both cases I put the message in a file rather than reword it, since neither gate's actual
 concern was ever in play. You may want to narrow those patterns to command positions rather than
 anywhere in the command string.
+
+---
+
+# Stage 2 decisions, 2 Nov 2026
+
+**D-031 — Mode A is behind a flag, not deleted, and its tests still run.**
+`GameRoot.ModeAEnabled = false` closes the *player's* route in — the Tab key and the title screen —
+while `SetMode` still works. That distinction is deliberate: if the flag had shut the code off
+entirely, every Mode A test would have started passing vacuously and the code would have rotted
+inside a month. As it is, the five-robot arc, the sweeping arrow, the gap detection and the 5-second
+hold cap are all still exercised on every run. The Stage 1 build with both modes is on the
+`stage1-both-modes` branch.
+
+**D-032 — The new difficulty came from two measured sweeps, and the first one taught me the dials
+were weaker than I assumed.**
+Sweep 1 moved blocker frequency across its whole range (0.35→0.98 start, ramp end 40→26) and shifted
+an average player's median only from 26 to 22 passes. The reason is that what kills that player is
+failing to *read* a turn, not how often a turn has something in it.
+
+Sweep 2 found the dial that does move it: **mirrored turns** (0.25→0.45 took the median 22→20). It
+also found one that does nothing at all for survival — **band narrowing is purely a scoring dial**.
+Its three settings (40/28/20 passes) produced *identical* medians to the digit, because the band
+decides whether a throw scores well, not whether the player lives. Worth knowing before anyone
+reaches for it as a difficulty knob.
+
+Shipped: blockers 0.55→0.98 by pass 26, mirrored 0.45, both-blocked 0.45, band narrowing over 28.
+
+**D-033 — I stopped at a median of 20 rather than pushing to the 15 floor.**
+Roy's band is 15–35 and I could have gone lower. I did not, because my "average" bot is a model and
+a real beginner will be worse than it. Twenty leaves five passes of headroom against the floor; 16
+or 17 would have left none, and the first real playtest would have blown through it.
+
+**D-034 — Which CC0 track went to which zone, and why.**
+All four are chiptune or tracker-era, which holds the set together and suits the chunky art:
+- *in the robot pub loop* → **factory floor**. It is literally a tracker tune about robots.
+- *Summer Park 8bit* → **rooftop**. The warmest and most relaxed of the four, for the sunset.
+- *Fast fight / battle music* → **scrapyard**. The tensest, for the storm and the lightning.
+- *SpacyLoop* → **launchpad**. Space-age, for the rocket.
+Lengths are 26, 44, 25 and 17 seconds. The shortest is under Roy's 30-second preference; it loops
+cleanly, and I would rather ship a clean 17-second CC0 loop than pad it.
+
+**D-035 — Audio lives in `Resources` and music streams.**
+`Resources` so it loads synchronously on both targets with no scene wiring, matching the balance
+JSON. An `AssetPostprocessor` forces the import settings rather than leaving them to whatever
+somebody last clicked: music streams at Vorbis 0.45, effects decompress on load at 0.70. A 44-second
+track decompressed on load costs megabytes of memory for nothing; a half-second explosion decoded on
+demand stutters exactly where the game least wants it. The whole audio set is 1.3 MB.
+
+**D-036 — The quit confirm PAUSES the simulation.**
+Escape stops the tick entirely rather than letting the fuse burn behind the box. A confirm that
+kills you while you read it is a trap, not a courtesy, and there is a test asserting the fuse does
+not move while it is open. Escape again quits, a fresh Shift press carries on, and both are also
+real mouse buttons. Desktop only: a browser tab cannot close itself, and Escape in a browser is the
+fullscreen-exit key.
+
+**D-037 — The public-safety audit is a script that can fail, not a claim in a document.**
+`Tools/repo_audit.py` checks nine things and exits non-zero on any of them: only allowlisted CC0
+binaries committed, all present, nothing referencing a non-redistributable source, every asset named
+in `ASSETS_LICENCE.md`, licences stated, build output ignored *and* absent, nothing over 2 MB,
+`LICENSE` present. Its first run failed on itself — it has to name the things it forbids — so it no
+longer scans its own source. That is the only exclusion.
+
+**D-038 — Review sheets are now cropped.**
+Roy asked for them framed tight. `contact_sheet.py` takes an optional `@x,y,w,h` crop in fractions
+per image, so a blocker sheet shows the robots rather than four fifths of empty backdrop, and the
+HUD sheet shows the readouts at a size where the text can actually be read.

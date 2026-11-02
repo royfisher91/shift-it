@@ -29,11 +29,13 @@ namespace KT.ShiftIt.EditorTools
             settings.compressionFormat = AudioCompressionFormat.Vorbis;
             settings.quality = isMusic ? 0.45f : 0.70f;
             settings.sampleRateSetting = AudioSampleRateSetting.OptimizeSampleRate;
+            // preloadAudioData moved onto the per-platform sample settings in Unity 6; the importer
+            // property is obsolete and is a compile error here.
+            settings.preloadAudioData = !isMusic;
             importer.defaultSampleSettings = settings;
 
             importer.forceToMono = false;
             importer.loadInBackground = isMusic;
-            importer.preloadAudioData = !isMusic;
 
             Debug.Log("[SHIFTIT] audio import: " + assetPath +
                       (isMusic ? "  -> streaming, q0.45" : "  -> decompress on load, q0.70"));

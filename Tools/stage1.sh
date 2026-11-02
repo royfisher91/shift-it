@@ -17,7 +17,7 @@ mkdir -p "$SHEETS"
 step() { echo; echo "=================== $* ==================="; }
 
 step "0/5  EditMode suite: the simulation, the difficulty ramp and the bot itself"
-Tools/with_lock.sh 45 editmode -runTests -testPlatform EditMode
+Tools/with_lock.sh "${KT_WAIT:-240}" editmode -runTests -testPlatform EditMode
 EM=$?
 echo "editmode exit=$EM"
 if [ $EM -eq 75 ]; then echo "ABORTING: never got the machine lock."; exit 75; fi
@@ -27,16 +27,16 @@ if [ $EM -ne 0 ]; then
 fi
 
 step "1/5  create the scene"
-Tools/with_lock.sh 40 scene -executeMethod KT.ShiftIt.EditorTools.BuildScript.CreateGameScene || exit 1
+Tools/with_lock.sh "${KT_WAIT:-240}" scene -executeMethod KT.ShiftIt.EditorTools.BuildScript.CreateGameScene || exit 1
 
 step "2/5  PlayMode tests + captures (needs a graphics device and the foreground)"
-KT_GFX=1 KT_NEEDS=both Tools/with_lock.sh 40 playmode -runTests -testPlatform PlayMode
+KT_GFX=1 KT_NEEDS=both Tools/with_lock.sh "${KT_WAIT:-240}" playmode -runTests -testPlatform PlayMode
 PM=$?
 echo "playmode exit=$PM"
 
 step "3/5  builds"
-Tools/with_lock.sh 40 buildwebgl -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWebGL || exit 1
-Tools/with_lock.sh 40 buildwin   -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWindows || exit 1
+Tools/with_lock.sh "${KT_WAIT:-240}" buildwebgl -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWebGL || exit 1
+Tools/with_lock.sh "${KT_WAIT:-240}" buildwin   -executeMethod KT.ShiftIt.EditorTools.BuildScript.BuildWindows || exit 1
 
 step "4/5  review sheets and GIFs"
 python Tools/contact_sheet.py "$SHEETS/sheet1_zones.png" \

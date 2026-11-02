@@ -9,6 +9,7 @@
 # usage: Tools/with_lock.sh <minutes> <tag> [unity args...]
 set -u
 MINS="${1:-30}"; shift
+INTERVAL="${KT_RETRY_SECS:-90}"
 DEADLINE=$(( $(date +%s) + MINS * 60 ))
 ATTEMPT=0
 while :; do
@@ -22,6 +23,6 @@ while :; do
     echo "  This is NOT a pass and NOT a failure - the run did not happen."
     exit 75
   fi
-  echo "  [$ATTEMPT] lock busy, $(( (DEADLINE - NOW) / 60 )) min left; retrying in 60s"
-  python -c "import time;time.sleep(60)"
+  echo "  [$ATTEMPT] lock busy, $(( (DEADLINE - NOW) / 60 )) min left; retrying in ${INTERVAL}s"
+  python -c "import time;time.sleep($INTERVAL)"
 done

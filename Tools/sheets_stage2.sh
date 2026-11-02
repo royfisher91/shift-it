@@ -36,9 +36,11 @@ python Tools/contact_sheet.py "$S/s2_1b_hud.png" \
   "$R/sheet_moments/moment_combo.png$HUD_L|SCORE and COMBO, top left" \
   "$R/sheet_moments/moment_combo.png$HUD_C|ZONE NAME and PASSES, top centre" \
   "$R/sheet_moments/moment_combo.png$HUD_R|PERSONAL BEST, top right" \
-  "$R/sheet_ui/ui_title_modeB_only.png$PLAY|TITLE - states the controls; no mode toggle now Mode B ships" \
+  "$R/sheet_ui/ui_title_with_tip.png$PLAY|TITLE as a browser player first sees it - the Sticky Keys tip" \
+  "$R/sheet_ui/ui_title_modeB_only.png$PLAY|...and after GOT IT: gone for good for that player" \
   "$R/sheet_ui/ui_quit_confirm.png$PLAY|ESC quit confirm - the game is PAUSED behind it" \
-  "$R/sheet_moments/ui_game_over.png$PLAY|GAME OVER - reason line, score, passes, personal best"
+  "$R/sheet_moments/ui_game_over.png$PLAY|GAME OVER - reason line, score, passes, personal best" \
+  "$R/sheet_ui/ui_title_with_tip.png@0.08,0.855,0.84,0.115|The tip close up: one line, a GOT IT, and it never takes Shift"
 
 echo "=== 1c. overview: every blocker tell ==="
 python Tools/contact_sheet.py "$S/s2_1c_blockers.png" \

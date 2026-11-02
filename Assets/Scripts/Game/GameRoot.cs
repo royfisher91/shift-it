@@ -17,6 +17,7 @@ namespace KT.ShiftIt.Game
         const string PrefBestA = "shiftit.best.modeA";
         const string PrefHints = "shiftit.hints";
         const string PrefMode = "shiftit.mode";
+        const string PrefTipDismissed = "shiftit.tip.stickykeys";
 
         /// <summary>
         /// MODE A (hold and release) is built, tested and measured, but it does not ship: Roy chose
@@ -104,7 +105,8 @@ namespace KT.ShiftIt.Game
             Hud.ModeButton.onClick.AddListener(ToggleMode);
             Hud.QuitYesButton.onClick.AddListener(QuitNow);
             Hud.QuitNoButton.onClick.AddListener(() => SetQuitConfirm(false));
-            Hud.SetStickyTip(StickyTipForPlatform());
+            Hud.TipDismissButton.onClick.AddListener(DismissStickyTip);
+            Hud.SetStickyTip(StickyKeysTip, ShouldShowStickyTip());
 
             Sim.GoToTitle();
             Board.EnsureLayout();
@@ -121,12 +123,45 @@ namespace KT.ShiftIt.Game
 
         static string BestKey(ControlMode m) => m == ControlMode.LeftRight ? PrefBestB : PrefBestA;
 
-        static string StickyTipForPlatform()
+        /// <summary>
+        /// The browser build cannot change Windows settings, so a player tapping Shift five times
+        /// in a row gets Windows' Sticky Keys beep and no explanation. This tells them whose beep
+        /// it is and how to stop it.
+        ///
+        /// The arrows are written as ">" rather than the arrow character on purpose: the built-in
+        /// runtime font is not guaranteed to carry U+2192, and a missing glyph renders as a box in
+        /// the one line that is supposed to reassure the player.
+        /// </summary>
+        const string StickyKeysTip =
+            "Heads up: Windows beeps when you tap Shift five times in a row. That's Sticky Keys, " +
+            "not us - turn the shortcut off in Settings > Accessibility > Keyboard > Sticky keys.";
+
+        /// <summary>
+        /// Only the browser build needs the tip: the Windows build suppresses the shortcut itself
+        /// and restores it on quit. Once dismissed it never comes back for that player.
+        /// </summary>
+        bool ShouldShowStickyTip()
         {
-            // WebGL cannot turn the Windows shortcuts off, so the player gets told instead.
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-                return "Tip: if Windows pops up a Sticky Keys box, click Cancel - this game only taps Shift, never holds it.";
-            return "";
+            bool onWeb = ForceStickyTipPlatform ?? (Application.platform == RuntimePlatform.WebGLPlayer);
+            if (!onWeb) return false;
+            return PlayerPrefs.GetInt(PrefTipDismissed, 0) == 0;
+        }
+
+        /// <summary>
+        /// Test seam for the line above. The tip is browser-only and the editor can never be a
+        /// browser, so without this the whole feature would ship with no test behind it at all.
+        /// Null means ask the real platform.
+        /// </summary>
+        public static bool? ForceStickyTipPlatform;
+
+        /// <summary>Put the tip away for good. Wired to its GOT IT button.</summary>
+        public void DismissStickyTip()
+        {
+            PlayerPrefs.SetInt(PrefTipDismissed, 1);
+            PlayerPrefs.Save();
+            Hud.SetStickyTip(StickyKeysTip, false);
+            Audio.Play(Sfx.UiPress);
+            Debug.Log("[SHIFTIT] Sticky Keys tip dismissed and remembered.");
         }
 
         SimConfig LoadConfig()
@@ -463,6 +498,7 @@ namespace KT.ShiftIt.Game
             PlayerPrefs.DeleteKey(PrefBestB);
             PlayerPrefs.DeleteKey(PrefHints);
             PlayerPrefs.DeleteKey(PrefMode);
+            PlayerPrefs.DeleteKey(PrefTipDismissed);
             PlayerPrefs.Save();
         }
     }

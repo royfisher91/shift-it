@@ -38,6 +38,7 @@ namespace KT.ShiftIt.PlayTests
             if (_root != null) Object.DestroyImmediate(_root.gameObject);
             _root = null;
             GameRoot.ConfigOverride = null;
+            GameRoot.ForceStickyTipPlatform = null;
             Time.captureDeltaTime = 0f;
             base.TearDown();
         }
@@ -306,11 +307,22 @@ namespace KT.ShiftIt.PlayTests
         public IEnumerator Capture_TitleAndQuitConfirm()
         {
             Capture.Session = "sheet_ui";
+            // Force the browser path so the Sticky Keys tip is on screen to be photographed; the
+            // editor can never be a browser, so without this it would never appear in a sheet.
+            GameRoot.ForceStickyTipPlatform = true;
             var root = Boot(Plain(), ControlMode.LeftRight, 4242);
             yield return Frames(4);
+            Assert.IsTrue(root.Hud.StickyTipShown, "the tip should be up for a first-time browser player");
+            Shoot("ui_title_with_tip",
+                  "TITLE as a browser player first sees it - the one-line Sticky Keys tip along the " +
+                  "bottom with its GOT IT button. It never takes Shift, so play is not blocked.");
+
+            root.Hud.TipDismissButton.onClick.Invoke();
+            yield return Frames(3);
+            Assert.IsFalse(root.Hud.StickyTipShown);
             Shoot("ui_title_modeB_only",
-                  "TITLE - Mode B ships, so the line states the controls instead of offering a " +
-                  "toggle. Logo, tagline, blinking PRESS SHIFT TO START, Sticky Keys tip.");
+                  "TITLE after GOT IT - the tip is gone for good for that player. Mode B ships, so " +
+                  "the line states the controls instead of offering a toggle.");
 
             yield return Tap(_kb.leftShiftKey);
             yield return Frames(6);

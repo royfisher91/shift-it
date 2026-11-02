@@ -111,6 +111,17 @@ namespace KT.ShiftIt.Game
             _outline.effectDistance = new Vector2(px, -px);
             return this;
         }
+        /// <summary>
+        /// Let this label wrap instead of overflowing. Labels default to overflow because almost
+        /// every one of them is a short HUD readout that must never reflow mid-game; the Sticky
+        /// Keys tip is a real sentence and needs the opposite.
+        /// </summary>
+        public Label SetWrap(bool on)
+        {
+            _text.horizontalOverflow = on ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow;
+            return this;
+        }
+
         public Label SetAlpha(float a)
         {
             var c = _text.color; _text.color = new Color(c.r, c.g, c.b, a);

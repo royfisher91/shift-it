@@ -350,3 +350,31 @@ longer scans its own source. That is the only exclusion.
 Roy asked for them framed tight. `contact_sheet.py` takes an optional `@x,y,w,h` crop in fractions
 per image, so a blocker sheet shows the robots rather than four fifths of empty backdrop, and the
 HUD sheet shows the readouts at a size where the text can actually be read.
+
+---
+
+# Added 2 Nov 2026
+
+**D-040 — The Sticky Keys tip is browser-only, dismissable, and tested through a seam.**
+
+Three decisions inside this one:
+
+1. **Browser only.** The Windows build switches the shortcut off itself and restores it on quit, so
+   showing the same tip there would be noise about a problem that build does not have.
+2. **Dismissal is remembered per player** in `PlayerPrefs`, which on WebGL is per browser profile. If
+   the player never presses GOT IT the tip appears again next time, which is the straightforward
+   reading of "show it once, dismissable, remembered".
+3. **The arrows are written as `>` and not the arrow character.** The built-in runtime font is not
+   guaranteed to carry U+2192, and a missing glyph renders as an empty box — in the one line whose
+   whole job is to reassure the player. The itch page notes use the real arrows, since markdown has
+   no font constraint.
+
+It never takes the Shift key, so pressing Shift starts the game whether or not the tip has been read,
+and a test asserts exactly that.
+
+**D-041 — A test seam was needed, because the editor can never be a browser.**
+`GameRoot.ForceStickyTipPlatform` lets the tests force the browser path. Without it this whole
+feature would have shipped with no test behind it: the platform check is false in the editor, so
+every assertion about the tip would have passed vacuously against a tip that was never shown. That
+is the "a check that could not run must never count as a pass" rule applied before the fact rather
+than after.

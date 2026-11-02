@@ -24,7 +24,11 @@ namespace KT.ShiftIt.Game
         Label _score, _combo, _best, _zone, _passes;
         // Title
         GameObject _titlePanel;
-        Label _logo, _tagline, _modeLine, _startLine, _stickyTip, _modeHelp;
+        Label _logo, _tagline, _modeLine, _startLine, _modeHelp;
+        // The Sticky Keys tip: a small strip the player can dismiss for good.
+        GameObject _tipPanel;
+        Label _tipText;
+        public Button TipDismissButton { get; private set; }
         // Game over
         GameObject _overPanel;
         Label _overTitle, _overReason, _overScore, _overBest, _overRetry;
@@ -185,9 +189,7 @@ namespace KT.ShiftIt.Game
             _startLine = Label.Create(_titlePanel.transform, "Start", 72, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1700f, 100f));
             _startLine.SetText("PRESS SHIFT TO START");
-            _stickyTip = Label.Create(_titlePanel.transform, "StickyTip", 30, new Color(0.68f, 0.72f, 0.82f))
-                .SetAnchored(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(1800f, 60f));
-            _stickyTip.SetText("");
+            BuildStickyTip();
 
             // The mode line is a real button so the title screen works with the mouse alone.
             var btn = _modeLine.gameObject.AddComponent<Button>();
@@ -231,6 +233,69 @@ namespace KT.ShiftIt.Game
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1800f, 100f));
             _overRetry.SetText("PRESS SHIFT TO RETRY");
             _overPanel.SetActive(false);
+        }
+
+        /// <summary>
+        /// A small, friendly strip along the bottom of the title screen warning browser players
+        /// about the Windows Sticky Keys beep, with a GOT IT that remembers the answer.
+        ///
+        /// It must not get in the way: it sits below everything, it never takes Shift, and pressing
+        /// Shift starts the game whether or not it has been read. Dismissing it is a mouse click,
+        /// which is fine because the title screen already has to work with the mouse alone.
+        /// </summary>
+        void BuildStickyTip()
+        {
+            _tipPanel = new GameObject("StickyTip");
+            _tipPanel.transform.SetParent(_titlePanel.transform, false);
+            var prt = _tipPanel.AddComponent<RectTransform>();
+            prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0f);
+            prt.pivot = new Vector2(0.5f, 0f);
+            prt.sizeDelta = new Vector2(1580f, 88f);
+            prt.anchoredPosition = new Vector2(0f, 44f);
+
+            var bg = _tipPanel.AddComponent<Image>();
+            // Generated at roughly the aspect it is drawn at (1580x88). A stretched sprite keeps
+            // its corner radius only if the source is close to the target shape; a 3:1 source
+            // stretched to 18:1 smears the rounded corners sideways.
+            bg.sprite = Shapes.RoundedRect(632, 36, 9);
+            bg.color = new Color(0.07f, 0.09f, 0.11f, 0.72f);
+            bg.raycastTarget = false;
+
+            _tipText = Label.Create(_tipPanel.transform, "TipText", 30,
+                                    new Color(0.80f, 0.85f, 0.93f), TextAnchor.MiddleLeft);
+            var trt = _tipText.Rect;
+            trt.anchorMin = new Vector2(0f, 0.5f);
+            trt.anchorMax = new Vector2(0f, 0.5f);
+            trt.pivot = new Vector2(0f, 0.5f);
+            trt.sizeDelta = new Vector2(1280f, 80f);
+            trt.anchoredPosition = new Vector2(26f, 0f);
+            _tipText.SetOutline(2f).SetWrap(true);
+
+            var b = new GameObject("TipDismiss");
+            b.transform.SetParent(_tipPanel.transform, false);
+            var bi = b.AddComponent<Image>();
+            bi.sprite = Shapes.RoundedRect(220, 70, 14);
+            bi.color = new Color(0.26f, 0.32f, 0.38f, 0.95f);
+            var brt = b.GetComponent<RectTransform>();
+            brt.anchorMin = brt.anchorMax = new Vector2(1f, 0.5f);
+            brt.pivot = new Vector2(1f, 0.5f);
+            brt.sizeDelta = new Vector2(220f, 62f);
+            brt.anchoredPosition = new Vector2(-24f, 0f);
+
+            var btn = b.AddComponent<Button>();
+            btn.targetGraphic = bi;
+            var c = btn.colors;
+            c.normalColor = Color.white;
+            c.highlightedColor = new Color(1.3f, 1.3f, 1.3f, 1f);
+            c.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            btn.colors = c;
+            TipDismissButton = btn;
+
+            var bl = Label.Create(b.transform, "TipDismissText", 30, Color.white);
+            bl.SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(220f, 62f));
+            bl.SetText("GOT IT");
+
+            _tipPanel.SetActive(false);
         }
 
         void BuildQuitConfirm()
@@ -302,7 +367,15 @@ namespace KT.ShiftIt.Game
 
         // =====================================================================
 
-        public void SetStickyTip(string s) => _stickyTip.SetText(s);
+        /// <summary>Set the tip's wording and whether it is on screen at all.</summary>
+        public void SetStickyTip(string text, bool show)
+        {
+            _tipText.SetText(text);
+            if (_tipPanel.activeSelf != show) _tipPanel.SetActive(show);
+        }
+
+        public bool StickyTipShown => _tipPanel != null && _tipPanel.activeSelf;
+        public string StickyTipText => _tipText != null ? _tipText.Raw.text : "";
 
         // ---- what the player can actually read, for the automated view checks ----
         public string ScoreText => _score.Raw.text;

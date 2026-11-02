@@ -38,6 +38,7 @@ namespace KT.ShiftIt.PlayTests
             if (_root != null) Object.DestroyImmediate(_root.gameObject);
             _root = null;
             GameRoot.ConfigOverride = null;
+            GameRoot.ForceStickyTipPlatform = null;
             base.TearDown();
         }
 
@@ -158,6 +159,67 @@ namespace KT.ShiftIt.PlayTests
             yield return Frames(2);
             Assert.AreEqual(5, root.Board.Receivers.Length,
                 "SetMode must still build Mode A, or its tests are testing nothing");
+        }
+
+        // =====================================================================
+        //  The Sticky Keys tip for browser players
+        // =====================================================================
+
+        [UnityTest]
+        public IEnumerator StickyKeysTip_ShowsForBrowserPlayers_AndStaysDismissed()
+        {
+            GameRoot.ForceStickyTipPlatform = true;          // the editor can never be a browser
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+
+            Assert.IsTrue(root.Hud.StickyTipShown, "a first-time browser player should see the tip");
+            string tip = root.Hud.StickyTipText;
+            StringAssert.Contains("beep", tip.ToLowerInvariant(), "the tip must name the beep");
+            StringAssert.Contains("Sticky Keys", tip, "...and say what is beeping");
+            StringAssert.Contains("Accessibility", tip, "...and how to turn it off");
+            StringAssert.Contains("Keyboard", tip);
+            Assert.Less(tip.Length, 220, "the tip is meant to be one friendly line, not a paragraph");
+
+            // GOT IT, through the real button wiring.
+            root.Hud.TipDismissButton.onClick.Invoke();
+            yield return Frames(2);
+            Assert.IsFalse(root.Hud.StickyTipShown, "GOT IT must put the tip away");
+
+            // And it must stay away for this player, across a fresh boot.
+            Object.DestroyImmediate(root.gameObject);
+            _root = null;
+            var again = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.IsFalse(again.Hud.StickyTipShown, "the dismissal must be remembered");
+        }
+
+        [UnityTest]
+        public IEnumerator StickyKeysTip_IsNotShownOnDesktop()
+        {
+            // The desktop build suppresses the shortcut itself and restores it on quit, so showing
+            // a browser-only tip there would just be noise.
+            GameRoot.ForceStickyTipPlatform = false;
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.IsFalse(root.Hud.StickyTipShown, "the tip is for browser players only");
+        }
+
+        [UnityTest]
+        public IEnumerator StickyKeysTip_DoesNotBlockPlay()
+        {
+            // "Don't block play": Shift must start the game whether or not the tip has been read.
+            GameRoot.ForceStickyTipPlatform = true;
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.IsTrue(root.Hud.StickyTipShown);
+
+            yield return Tap(_kb.leftShiftKey);
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase,
+                "Shift must start the game with the tip still on screen");
+
+            // It lives on the title panel, so it goes away with it rather than sitting over play.
+            yield return Frames(2);
+            Assert.IsFalse(root.Hud.TitleShown, "the title screen should be gone");
         }
 
         [UnityTest]

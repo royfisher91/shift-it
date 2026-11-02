@@ -210,9 +210,13 @@ namespace KT.ShiftIt.Game
             float sy = shake * (Mathf.PerlinNoise(0.7f, Time.time * 21f) - 0.5f) * 2f;
 
             transform.localPosition = _home + new Vector3(sx, bobY + sy, 0f);
-            float squash = dead ? 0.6f : 1f + Mathf.Sin(_bobPhase * 2f) * 0.02f;
-            float k = _baseScale * (dead ? 0.92f : 1f);
-            transform.localScale = new Vector3(k / Mathf.Max(0.2f, squash), k * squash, 1f);
+            // A dead robot slumps; it does not turn into a pancake. The first version squashed to
+            // 0.6 height and stretched 1/0.6 wide, which read as a flattened lozenge with a line
+            // on it. The red X eyes are what say "dead" - the body just sags.
+            float squash = dead ? 0.90f : 1f + Mathf.Sin(_bobPhase * 2f) * 0.02f;
+            float k = _baseScale;
+            transform.localScale = new Vector3(k * (dead ? 1.06f : 1f / Mathf.Max(0.2f, squash)),
+                                               k * squash, 1f);
 
             ApplyFace(dt);
             FadeTells(dt);

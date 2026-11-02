@@ -165,8 +165,8 @@ namespace KT.ShiftIt.Game
                     new Vector3(x, 4.35f, 0f), new Vector3(0.06f, 1.4f, 1f));
                 Add(r, "Shade", Shapes.TriangleUp(90, 50), new Color(0.34f, 0.31f, 0.24f), -78,
                     new Vector3(x, 3.75f, 0f), new Vector3(1.1f, 1f, 1f), 180f);
-                _lamps.Add(Add(r, "Glow", Shapes.Glow(256), new Color(1f, 0.82f, 0.45f, 0.30f), -77,
-                    new Vector3(x, 3.1f, 0f), new Vector3(3.2f, 3.2f, 1f)));
+                _lamps.Add(Add(r, "Glow", Shapes.Glow(256), new Color(1f, 0.84f, 0.48f, 0.62f), -77,
+                    new Vector3(x, 2.9f, 0f), new Vector3(4.6f, 4.6f, 1f)));
             }
 
             // The safety sign.
@@ -238,12 +238,16 @@ namespace KT.ShiftIt.Game
                 float x = i == 0 ? -7.6f : 7.4f;
                 Add(r, "AC", Shapes.RoundedRect(180, 130, 14), new Color(0.44f, 0.42f, 0.46f), -61,
                     new Vector3(x, -2.85f, 0f), new Vector3(1.2f, 1.1f, 1f));
+                Add(r, "ACVent", Shapes.Circle(96), new Color(0.20f, 0.19f, 0.22f), -60,
+                    new Vector3(x, -2.85f, 0f), new Vector3(0.95f, 0.95f, 1f));
                 var fan = new GameObject("Fan").transform;
                 fan.SetParent(r, false);
                 fan.localPosition = new Vector3(x, -2.85f, 0f);
-                for (int b = 0; b < 4; b++)
-                    Add(fan, "Blade", Shapes.CapsuleLeftPivot(46, 14), new Color(0.22f, 0.22f, 0.25f), -60,
-                        Vector3.zero, Vector3.one, b * 90f);
+                for (int b = 0; b < 5; b++)
+                    Add(fan, "Blade", Shapes.CapsuleLeftPivot(42, 9), new Color(0.55f, 0.56f, 0.60f), -59,
+                        Vector3.zero, Vector3.one, b * 72f);
+                Add(r, "ACHub", Shapes.Circle(24), new Color(0.30f, 0.30f, 0.34f), -58,
+                    new Vector3(x, -2.85f, 0f), new Vector3(0.5f, 0.5f, 1f));
                 _fans.Add(fan);
             }
         }
@@ -264,9 +268,9 @@ namespace KT.ShiftIt.Game
                 c.localPosition = new Vector3(Range(-12f, 12f), Range(2.2f, 4.8f), 0f);
                 int lumps = 3 + (int)(Rand() * 3);
                 for (int j = 0; j < lumps; j++)
-                    Add(c, "Lump", Shapes.Circle(96), new Color(0.17f, 0.18f, 0.21f, 0.92f), -92,
+                    Add(c, "Lump", Shapes.Circle(96), new Color(0.23f, 0.24f, 0.28f, 0.80f), -92,
                         new Vector3(j * Range(0.7f, 1.1f) - lumps * 0.4f, Range(-0.2f, 0.2f), 0f),
-                        Vector3.one * Range(1.4f, 2.6f));
+                        Vector3.one * Range(0.9f, 1.6f));
                 _clouds.Add(c);
             }
 
@@ -306,9 +310,9 @@ namespace KT.ShiftIt.Game
             // Rain: a few columns of streaks, recycled as they fall.
             for (int i = 0; i < 46; i++)
             {
-                var d = Add(r, "Rain", Shapes.Block(), new Color(0.75f, 0.82f, 0.9f, 0.33f), -50,
+                var d = Add(r, "Rain", Shapes.Block(), new Color(0.80f, 0.87f, 0.95f, 0.55f), -50,
                             new Vector3(Range(-12f, 12f), Range(-4f, 6f), 0f),
-                            new Vector3(0.035f, Range(0.4f, 0.8f), 1f), 8f).transform;
+                            new Vector3(0.09f, Range(0.5f, 0.95f), 1f), 8f).transform;
                 _rain.Add(d);
             }
         }
@@ -346,7 +350,7 @@ namespace KT.ShiftIt.Game
             // Red lattice gantry: uprights, cross-braces and X bracing.
             for (int side = 0; side < 2; side++)
             {
-                float x = side == 0 ? -8.5f : -4.3f;
+                float x = side == 0 ? -9.55f : -6.45f;
                 Add(r, "Upright", Shapes.Block(), new Color(0.62f, 0.16f, 0.14f), -80,
                     new Vector3(x, 0.6f, 0f), new Vector3(0.22f, 9f, 1f));
                 for (int k = 0; k < 7; k++)
@@ -362,16 +366,16 @@ namespace KT.ShiftIt.Game
 
             // The rocket, marked KT-1.
             Add(r, "Rocket", Shapes.RoundedRect(150, 620, 70), new Color(0.94f, 0.94f, 0.96f), -78,
-                new Vector3(-6.4f, 1.3f, 0f), new Vector3(1.05f, 1.02f, 1f));
+                new Vector3(-8.0f, 1.1f, 0f), new Vector3(0.85f, 0.88f, 1f));
             Add(r, "Nose", Shapes.TriangleUp(150, 170), new Color(0.90f, 0.91f, 0.94f), -78,
-                new Vector3(-6.4f, 4.55f, 0f), new Vector3(1.05f, 1f, 1f));
+                new Vector3(-8.0f, 3.78f, 0f), new Vector3(0.85f, 0.85f, 1f));
             Add(r, "FinL", Shapes.TriangleUp(90, 150), new Color(0.72f, 0.16f, 0.14f), -79,
-                new Vector3(-7.3f, -1.3f, 0f), new Vector3(1f, 1f, 1f), 28f);
+                new Vector3(-8.72f, -1.2f, 0f), new Vector3(0.85f, 0.85f, 1f), 28f);
             Add(r, "FinR", Shapes.TriangleUp(90, 150), new Color(0.72f, 0.16f, 0.14f), -79,
-                new Vector3(-5.5f, -1.3f, 0f), new Vector3(1f, 1f, 1f), -28f);
+                new Vector3(-7.28f, -1.2f, 0f), new Vector3(0.85f, 0.85f, 1f), -28f);
             Add(r, "Band", Shapes.Block(), new Color(0.72f, 0.16f, 0.14f), -77,
-                new Vector3(-6.4f, 2.5f, 0f), new Vector3(1.55f, 0.3f, 1f));
-            var tag = Label.CreateWorld(r, "RocketTag", new Vector3(-6.4f, 0.9f, 0f), 72,
+                new Vector3(-8.0f, 2.2f, 0f), new Vector3(1.32f, 0.26f, 1f));
+            var tag = Label.CreateWorld(r, "RocketTag", new Vector3(-8.0f, 0.75f, 0f), 64,
                                         new Color(0.2f, 0.22f, 0.26f));
             tag.SetText("KT-1");
 
@@ -398,7 +402,7 @@ namespace KT.ShiftIt.Game
                         float dip = n > 0.82f ? 0.55f : 1f;
                         var c = _lamps[i].color;
                         _lamps[i].color = new Color(c.r, c.g, c.b,
-                            Mathf.Lerp(c.a, 0.30f * dip * (0.9f + n * 0.2f), dt * 8f));
+                            Mathf.Lerp(c.a, 0.62f * dip * (0.9f + n * 0.2f), dt * 8f));
                     }
                     break;
 

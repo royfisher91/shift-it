@@ -294,7 +294,7 @@ namespace KT.ShiftIt.PlayTests
             // Die, and photograph the explosion and the card.
             yield return Until(() => root.Sim.Phase == Phase.PlayerHolding, 5f, "the bomb back");
             yield return Until(() => root.Sim.Phase == Phase.Failing, 6f, "the fuse to run out");
-            yield return Frames(3);
+            yield return Frames(9);     // 3 frames in, nothing had expanded yet
             Shoot("moment_explosion", "EXPLOSION - smoke and fire particles, white flash, screen shake, dead X-eyed robots.");
             yield return Until(() => root.Sim.Phase == Phase.GameOver, 4f, "the game-over card");
             yield return Frames(2);

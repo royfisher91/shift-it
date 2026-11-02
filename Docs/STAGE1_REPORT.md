@@ -105,13 +105,68 @@ instrument first. It cost one run, and the lesson predicted it.
 
 ## 4. Scope checklist
 
-*(filled in from the pipeline run — see sections 5–8 for evidence)*
+**Stage 1 gate scope — "grey shapes, both modes, the full loop, fuse ring, scoring, fail, retry,
+and the shield/dodger twist."**
+
+| Item | State | Evidence |
+|---|---|---|
+| Both control modes | **DONE** | Title toggles with Tab or the mouse; 5 robots in Mode A, 2 in Mode B |
+| Full core loop (catch → throw → receiver panics → returns) | **DONE** | `sheet3_moments` |
+| Fuse ring with green PERFECT band | **DONE** | Translucent band painted *over* the arc with a solid tip marker, so it never vanishes underneath |
+| Scoring, combo to +6, personal best | **DONE** | `PerfectCombo_RisesThenCapsAtSix` asserts 2,3,4,5,6,6,6,6 |
+| Fail + reason line + retry | **DONE** | 8 distinct reason lines; 0.4 s input lockout tested |
+| Shield / dodger twist | **DONE** | Plus asleep, on-break, mirrored, both-blocked, swap, hot, dud |
+| Difficulty ramp to your 2 Nov numbers | **DONE** | Each ramp asserted against the spec so it cannot drift |
+| Windows accessibility handling | **DONE** | Edge-detected throws; longest hold ever observed **1.97 s** against an 8 s limit |
+| **Beyond Stage 1 scope, built anyway** | | |
+| All four zones + hazard-stripe wipe + jingle | **DONE** | Stage 3 scope; procedural, so it was cheap |
+| Robots with screen-faces and expressions | **DONE** | Stage 2 scope; calm / happy / panic / NOPE / asleep / dead |
+| Sound effects | **PARTIAL** | All 13 synthesised in code and audible. Real clips and music are Stage 2 — see section 7 |
+| Chunky display font | **MISSING** | Stage 1 uses Unity's built-in font. See gaps below |
+
+### The Seamless Feel Gate, item by item (never averaged)
+
+| # | Item | Result |
+|---|---|---|
+| 1 | Frame rate, per frame | **PASS** — 361 frames: median 16.67 ms, **worst 17.77 ms, zero frames over 33 ms** |
+| 2 | No stuck states | **PASS** — 300 bot runs: 271 ended, 29 survived to the cap, **0 frozen**. Longest gap between two passes 4.40 s simulated, 2.68 s live |
+| 3 | No camera clipping | **N/A** — fixed orthographic 2D camera; there is no geometry for it to enter |
+| 4 | No snapping | **PASS by construction** — nothing uses physics. The bomb follows an arc and robots lerp; there is no collision resolve to snap out of |
+| 5 | No jitter | **N/A** — no surface or mode states to alternate between |
+| 6 | Feedback on every action | **PASS** — table below |
+| 7 | UI clean and sized right | **PASS** — four contact sheets at 1080p; five sizing defects found this way and fixed |
+| 8 | Time to core play | **PASS** — **0.08 s** from boot to the first catch. One key press |
+
+Every rendered frame was also checked for *being a frame at all*, by luminance standard deviation:
+title 0.148, in play 0.155, zone 2 0.132, zone 3 0.116, zone 4 0.215 — all far above the 0.02
+blank-screen threshold. That check exists because a dead camera or a missing font would otherwise
+pass every other test in the suite.
+
+### Feedback on every action (feel gate item 6)
+
+| Action | Visual | Sound | UI |
+|---|---|---|---|
+| Catch | puff of smoke, robot squash | catch thunk | score/zone HUD live |
+| Fuse burning | ring arc shrinks, tip marker, sparks, bomb shivers harder | tick, speeding up with the fuse | — |
+| Tip enters the green | band brightens and pops, tip swells and turns green | — | — |
+| Normal throw | bomb arcs away, receiver panics | throw whoosh | floating +1 |
+| PERFECT throw | green particle burst | ding, pitched up by combo | PERFECT! pop, floating +N, combo counter |
+| Throw at a shield | bomb bounces, blue sparks, screen shake | shield clang | reason line on the card |
+| Dud fizzles | — | fizzle | FIZZLED! pop, +2 |
+| Blocked side opens | shield clears instantly | pop + clang | OPEN! pop |
+| Blocked side swaps | shield moves, screen shake | swap clang, pitched apart from the shield | SWAP! pop |
+| Zone change | hazard-stripe wipe | 3-note jingle | SHIFT! banner slides through |
+| Explosion | bright core, smoke, fire, debris, screen shake, white flash, robots die | explosion, plus a cause-specific sound | BOOM! card with the reason |
+| Holding Shift too long | — | — | TAP SHIFT - DON'T HOLD IT DOWN |
+
+No two failures share a sound: a shield bounce clangs, a dud buzzes, a floor hit buzzes lower.
+Pattern 10 names "one sound for success and failure, differing only in volume" as a red flag.
 
 ---
 
 ## 5. Sticky Keys / Filter Keys results
 
-*(pending)*
+*(pending — harness written, runs against the Windows build)*
 
 ---
 

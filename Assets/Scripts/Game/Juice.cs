@@ -12,7 +12,7 @@ namespace KT.ShiftIt.Game
     /// </summary>
     public sealed class Juice : MonoBehaviour
     {
-        const int PoolSize = 96;
+        const int PoolSize = 128;
 
         struct P
         {
@@ -100,21 +100,32 @@ namespace KT.ShiftIt.Game
         {
             var smoke = Shapes.Circle(48);
             var spark = Shapes.Spark(40);
-            for (int i = 0; i < 26; i++)
+            var glow = Shapes.Glow(256);
+
+            // A bright core that blooms out of the bomb and fades: the explosion needs a CENTRE,
+            // or it reads as a handful of specks. This is what was missing.
+            Spawn(pos, Vector3.zero, 0.42f, 0.6f, 4.6f,
+                  new Color(1f, 0.95f, 0.70f, 0.95f), new Color(1f, 0.45f, 0.15f, 0f), glow, 0f);
+            Spawn(pos, Vector3.zero, 0.75f, 1.0f, 6.4f,
+                  new Color(1f, 0.55f, 0.20f, 0.55f), new Color(0.2f, 0.2f, 0.22f, 0f), glow, 0f);
+
+            // Fireball, then smoke. Bigger and slower than the first version, which started every
+            // puff at a quarter of a unit and had all but vanished three frames later.
+            for (int i = 0; i < 30; i++)
             {
                 float a = Range(0f, Mathf.PI * 2f);
                 float sp = Range(1.4f, 6.5f);
                 Spawn(pos, new Vector3(Mathf.Cos(a) * sp, Mathf.Sin(a) * sp + 1.2f, 0f),
-                      Range(0.45f, 1.05f), Range(0.25f, 0.7f), Range(0.9f, 1.9f),
+                      Range(0.55f, 1.25f), Range(0.75f, 1.5f), Range(1.9f, 3.4f),
                       new Color(1f, Range(0.55f, 0.9f), 0.25f, 0.95f),
                       new Color(0.25f, 0.25f, 0.28f, 0f), smoke, Range(-180f, 180f));
             }
-            for (int i = 0; i < 18; i++)
+            for (int i = 0; i < 22; i++)
             {
                 float a = Range(0f, Mathf.PI * 2f);
-                float sp = Range(3.5f, 10f);
+                float sp = Range(3.5f, 11f);
                 Spawn(pos, new Vector3(Mathf.Cos(a) * sp, Mathf.Sin(a) * sp + 1.5f, 0f),
-                      Range(0.3f, 0.7f), Range(0.2f, 0.45f), 0.02f,
+                      Range(0.35f, 0.8f), Range(0.3f, 0.6f), 0.02f,
                       new Color(1f, 0.95f, 0.6f, 1f), new Color(1f, 0.4f, 0.2f, 0f),
                       spark, Range(-360f, 360f));
             }

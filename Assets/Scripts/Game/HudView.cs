@@ -18,6 +18,7 @@ namespace KT.ShiftIt.Game
 
         Canvas _canvas;
         RectTransform _root;
+        Camera _cam;
 
         // HUD
         Label _score, _combo, _best, _zone, _passes;

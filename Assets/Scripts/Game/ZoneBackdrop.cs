@@ -170,16 +170,20 @@ namespace KT.ShiftIt.Game
             }
 
             // The safety sign.
-            Add(r, "SignPlate", Shapes.RoundedRect(300, 120, 12), new Color(0.90f, 0.86f, 0.30f), -70,
-                new Vector3(-7.0f, 1.9f, 0f), new Vector3(1.5f, 1.3f, 1f));
-            var l1 = Label.CreateWorld(r, "SignTop", new Vector3(-7.0f, 2.25f, 0f), 30,
-                                       new Color(0.1f, 0.1f, 0.1f));
+            // The sign is a joke the player has to be able to READ. At the first size it was an
+            // illegible yellow smudge, so it is bigger, higher-contrast and spaced out.
+            Add(r, "SignPlate", Shapes.RoundedRect(300, 130, 12), new Color(0.93f, 0.88f, 0.26f), -70,
+                new Vector3(-6.9f, 2.25f, 0f), new Vector3(2.15f, 1.75f, 1f));
+            Add(r, "SignEdge", Shapes.RoundedRectOutline(300, 130, 12, 8), new Color(0.12f, 0.11f, 0.07f), -69,
+                new Vector3(-6.9f, 2.25f, 0f), new Vector3(2.15f, 1.75f, 1f));
+            var l1 = Label.CreateWorld(r, "SignTop", new Vector3(-6.9f, 2.78f, 0f), 54,
+                                       new Color(0.10f, 0.09f, 0.06f));
             l1.SetText("DAYS WITHOUT");
-            var l2 = Label.CreateWorld(r, "SignMid", new Vector3(-7.0f, 1.95f, 0f), 30,
-                                       new Color(0.1f, 0.1f, 0.1f));
+            var l2 = Label.CreateWorld(r, "SignMid", new Vector3(-6.9f, 2.40f, 0f), 54,
+                                       new Color(0.10f, 0.09f, 0.06f));
             l2.SetText("AN EXPLOSION");
-            var l3 = Label.CreateWorld(r, "SignNum", new Vector3(-7.0f, 1.52f, 0f), 56,
-                                       new Color(0.72f, 0.12f, 0.10f));
+            var l3 = Label.CreateWorld(r, "SignNum", new Vector3(-6.9f, 1.82f, 0f), 104,
+                                       new Color(0.70f, 0.10f, 0.08f));
             l3.SetText("0");
         }
 
@@ -342,7 +346,7 @@ namespace KT.ShiftIt.Game
             // Red lattice gantry: uprights, cross-braces and X bracing.
             for (int side = 0; side < 2; side++)
             {
-                float x = side == 0 ? -4.6f : 4.6f;
+                float x = side == 0 ? -8.5f : -4.3f;
                 Add(r, "Upright", Shapes.Block(), new Color(0.62f, 0.16f, 0.14f), -80,
                     new Vector3(x, 0.6f, 0f), new Vector3(0.22f, 9f, 1f));
                 for (int k = 0; k < 7; k++)
@@ -358,16 +362,16 @@ namespace KT.ShiftIt.Game
 
             // The rocket, marked KT-1.
             Add(r, "Rocket", Shapes.RoundedRect(150, 620, 70), new Color(0.94f, 0.94f, 0.96f), -78,
-                new Vector3(0f, 1.3f, 0f), new Vector3(1.05f, 1.02f, 1f));
+                new Vector3(-6.4f, 1.3f, 0f), new Vector3(1.05f, 1.02f, 1f));
             Add(r, "Nose", Shapes.TriangleUp(150, 170), new Color(0.90f, 0.91f, 0.94f), -78,
-                new Vector3(0f, 4.55f, 0f), new Vector3(1.05f, 1f, 1f));
+                new Vector3(-6.4f, 4.55f, 0f), new Vector3(1.05f, 1f, 1f));
             Add(r, "FinL", Shapes.TriangleUp(90, 150), new Color(0.72f, 0.16f, 0.14f), -79,
-                new Vector3(-0.9f, -1.3f, 0f), new Vector3(1f, 1f, 1f), 28f);
+                new Vector3(-7.3f, -1.3f, 0f), new Vector3(1f, 1f, 1f), 28f);
             Add(r, "FinR", Shapes.TriangleUp(90, 150), new Color(0.72f, 0.16f, 0.14f), -79,
-                new Vector3(0.9f, -1.3f, 0f), new Vector3(1f, 1f, 1f), -28f);
+                new Vector3(-5.5f, -1.3f, 0f), new Vector3(1f, 1f, 1f), -28f);
             Add(r, "Band", Shapes.Block(), new Color(0.72f, 0.16f, 0.14f), -77,
-                new Vector3(0f, 2.5f, 0f), new Vector3(1.55f, 0.3f, 1f));
-            var tag = Label.CreateWorld(r, "RocketTag", new Vector3(0f, 0.9f, 0f), 46,
+                new Vector3(-6.4f, 2.5f, 0f), new Vector3(1.55f, 0.3f, 1f));
+            var tag = Label.CreateWorld(r, "RocketTag", new Vector3(-6.4f, 0.9f, 0f), 72,
                                         new Color(0.2f, 0.22f, 0.26f));
             tag.SetText("KT-1");
 

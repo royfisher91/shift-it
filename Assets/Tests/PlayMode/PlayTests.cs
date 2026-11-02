@@ -22,6 +22,7 @@ namespace KT.ShiftIt.PlayTests
     {
         Keyboard _kb;
         GameRoot _root;
+        float _bootedAt;
 
         public override void Setup()
         {
@@ -62,6 +63,7 @@ namespace KT.ShiftIt.PlayTests
             var root = go.AddComponent<GameRoot>();
             root.Seed = seed;
             root.StartMuted = true;
+            _bootedAt = Time.realtimeSinceStartup;
             go.SetActive(true);                        // Awake runs here
             root.SetMode(mode);
             _root = root;
@@ -124,8 +126,12 @@ namespace KT.ShiftIt.PlayTests
 
             Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase, "Shift must start the game");
             Assert.Greater(root.Sim.Fuse, 0f, "the first bomb must be live");
-            // Feel gate item 8: time to core play. It is one key press from launch.
-            Assert.Less(Time.timeSinceLevelLoad, 30f, "the player must reach core play within 30 s");
+            // Feel gate item 8: time to core play, measured from THIS game being constructed.
+            // The first version used Time.timeSinceLevelLoad, which in a PlayMode suite has been
+            // counting since the run began - it read 250 s and measured nothing about the game.
+            float toPlay = Time.realtimeSinceStartup - _bootedAt;
+            Debug.Log("[SHIFTIT] time from boot to the first catch: " + toPlay.ToString("0.00") + "s");
+            Assert.Less(toPlay, 30f, "the player must reach core play within 30 s");
             Assert.IsNotNull(Capture.Shot(root.Cam, "02_first_catch_modeB"));
         }
 
@@ -250,6 +256,7 @@ namespace KT.ShiftIt.PlayTests
             // Force a shield on one side from pass 0, and nothing else.
             var c = Plain();
             c.blockerChanceAtUnlock = 1f; c.blockerChanceAtEnd = 1f;
+            c.blockerRampStartPass = 0;        // or the ramp is still zero at pass 0
             c.unlockShield = 0; c.unlockAsleep = int.MaxValue; c.unlockOnBreak = int.MaxValue;
             var root = Boot(c, ControlMode.LeftRight);
             yield return Frames(2);
@@ -427,10 +434,17 @@ namespace KT.ShiftIt.PlayTests
             yield return Frames(3);
             yield return Tap(_kb.leftShiftKey);
 
-            float t = 0f;
+            float t = 0f, lastPassAt = 0f, worstGap = 0f;
+            int lastPasses = 0;
             var sim = root.Sim;
             while (sim.Phase != Phase.GameOver && t < 120f)
             {
+                if (sim.Passes != lastPasses)
+                {
+                    lastPasses = sim.Passes;
+                    if (t - lastPassAt > worstGap) worstGap = t - lastPassAt;
+                    lastPassAt = t;
+                }
                 if (sim.Phase == Phase.PlayerHolding && sim.FuseFraction < 0.45f && sim.Bomb != BombKind.Dud)
                 {
                     int open = sim.Turn.FirstOpenSlot();
@@ -443,10 +457,21 @@ namespace KT.ShiftIt.PlayTests
                 t += Time.deltaTime;
                 yield return null;
             }
-            Assert.AreEqual(Phase.GameOver, sim.Phase,
-                "the run never ended - passes=" + sim.Passes + " phase=" + sim.Phase);
-            Debug.Log("[SHIFTIT] live run reached pass " + sim.Passes + " score " + sim.Score +
-                      " in " + t.ToString("0.0") + "s, died of " + sim.Fail);
+            // Three outcomes, counted apart: it exploded, it was still scoring when the window
+            // closed, or it wedged. Only the third is a defect. The first version of this test
+            // asserted "it must reach game over" and failed on a run that reached pass 89 while
+            // still playing - which is the game working.
+            bool ended = sim.Phase == Phase.GameOver;
+            float sinceLastPass = t - lastPassAt;
+            Debug.Log("[SHIFTIT] live run: pass " + sim.Passes + " score " + sim.Score +
+                      " in " + t.ToString("0.0") + "s, " +
+                      (ended ? "died of " + sim.Fail : "still playing at the window's end") +
+                      ", longest gap between passes " + worstGap.ToString("0.00") + "s");
+            Assert.Less(worstGap, 10f,
+                "the game stopped making progress for " + worstGap.ToString("0.0") + "s");
+            Assert.IsTrue(ended || sinceLastPass < 10f,
+                "the run neither ended nor was still scoring - passes=" + sim.Passes +
+                " phase=" + sim.Phase);
         }
     }
 }

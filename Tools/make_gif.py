@@ -1,6 +1,6 @@
 """Build a GIF from a folder of numbered frames captured by CaptureTests.
 
-usage: python make_gif.py <frame_dir> <out.gif> [fps] [width]
+usage: python make_gif.py <frame_dir> <out.gif> [fps] [width] [colours]
 
 Refuses to write a GIF from fewer than 10 frames rather than producing a one-frame
 "animation" that looks like a successful capture.
@@ -19,6 +19,7 @@ def main():
     src, out = sys.argv[1], sys.argv[2]
     fps = float(sys.argv[3]) if len(sys.argv) > 3 else 20.0
     width = int(sys.argv[4]) if len(sys.argv) > 4 else 480
+    colors = int(sys.argv[5]) if len(sys.argv) > 5 else 200
 
     files = sorted(glob.glob(os.path.join(src, "f*.png")))
     if len(files) < 10:
@@ -31,7 +32,7 @@ def main():
         if im.width != width:
             im = im.resize((width, int(width * im.height / im.width)), Image.LANCZOS)
         # Adaptive palette per frame keeps the flat cartoon colours clean in 256 colours.
-        frames.append(im.quantize(colors=200, method=Image.MEDIANCUT))
+        frames.append(im.quantize(colors=colors, method=Image.MEDIANCUT))
 
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     frames[0].save(

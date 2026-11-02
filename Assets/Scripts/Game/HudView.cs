@@ -90,8 +90,10 @@ namespace KT.ShiftIt.Game
                 .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -92f), new Vector2(900f, 56f));
 
             // ---------- transient ----------
-            _hint = Label.Create(_root, "Hint", 56, new Color(1f, 0.95f, 0.5f))
-                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 250f), new Vector2(1500f, 90f));
+            // Sits high and clear: it used to overlap the PERFECT pop at y=150 and, in Mode A,
+            // the topmost robot of the arc.
+            _hint = Label.Create(_root, "Hint", 52, new Color(1f, 0.95f, 0.5f))
+                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -176f), new Vector2(1500f, 80f));
             _banner = Label.Create(_root, "Banner", 110, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(1900f, 160f));
             _centrePop = Label.Create(_root, "CentrePop", 92, new Color(0.5f, 1f, 0.6f))
@@ -99,16 +101,32 @@ namespace KT.ShiftIt.Game
             _hint.SetAlpha(0f); _banner.SetAlpha(0f); _centrePop.SetAlpha(0f);
 
             // Zone-change hazard wipe: a wide striped bar that sweeps across the screen.
+            // Hazard stripes, not a slab: a row of alternating yellow and black diagonal bars
+            // that sweeps across. The first version was a single solid yellow rectangle 760 px
+            // wide, which read as a wall dropping over the game rather than a wipe.
             var wipeGo = new GameObject("Wipe");
             wipeGo.transform.SetParent(_root, false);
+            _wipeRt = wipeGo.AddComponent<RectTransform>();
+            _wipeRt.anchorMin = _wipeRt.anchorMax = new Vector2(0.5f, 0.5f);
+            _wipeRt.sizeDelta = new Vector2(620f, 2600f);
+            _wipeRt.localEulerAngles = new Vector3(0f, 0f, 18f);
             _wipe = wipeGo.AddComponent<Image>();
             _wipe.sprite = Shapes.Block();
-            _wipe.color = new Color(1f, 0.78f, 0.1f, 1f);
+            _wipe.color = new Color(0.07f, 0.07f, 0.09f, 1f);
             _wipe.raycastTarget = false;
-            _wipeRt = wipeGo.GetComponent<RectTransform>();
-            _wipeRt.anchorMin = _wipeRt.anchorMax = new Vector2(0.5f, 0.5f);
-            _wipeRt.sizeDelta = new Vector2(760f, 2600f);
-            _wipeRt.localEulerAngles = new Vector3(0f, 0f, 18f);
+            for (int i = 0; i < 7; i++)
+            {
+                var bar = new GameObject("Stripe" + i);
+                bar.transform.SetParent(wipeGo.transform, false);
+                var bi = bar.AddComponent<Image>();
+                bi.sprite = Shapes.Block();
+                bi.color = new Color(1f, 0.78f, 0.1f, 1f);
+                bi.raycastTarget = false;
+                var brt = bar.GetComponent<RectTransform>();
+                brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0.5f);
+                brt.sizeDelta = new Vector2(44f, 2600f);
+                brt.anchoredPosition = new Vector2(-270f + i * 88f, 0f);
+            }
             wipeGo.SetActive(false);
 
             // Full-screen white flash for the explosion.
@@ -276,7 +294,7 @@ namespace KT.ShiftIt.Game
                 _hintTimer -= unscaledDt;
                 float a = Mathf.Clamp01(_hintTimer < 0.5f ? _hintTimer / 0.5f : 1f);
                 _hint.SetAlpha(a);
-                _hint.Rect.anchoredPosition = new Vector2(0f, 250f + (1f - a) * 14f);
+                _hint.Rect.anchoredPosition = new Vector2(0f, -176f - (1f - a) * 14f);
             }
             else _hint.SetAlpha(0f);
 
@@ -332,8 +350,10 @@ namespace KT.ShiftIt.Game
             // flash
             if (_flashA > 0f)
             {
-                _flashA = Mathf.MoveTowards(_flashA, 0f, unscaledDt * 3.2f);
-                _flash.color = new Color(1f, 1f, 1f, _flashA * 0.85f);
+                // Was 0.85 alpha decaying at 3.2/s, which held the screen near-white for about a
+                // quarter of a second and hid the explosion it was supposed to punctuate.
+                _flashA = Mathf.MoveTowards(_flashA, 0f, unscaledDt * 6.5f);
+                _flash.color = new Color(1f, 1f, 1f, _flashA * 0.42f);
             }
 
             // floating score pops

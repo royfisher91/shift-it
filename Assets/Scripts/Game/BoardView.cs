@@ -15,7 +15,8 @@ namespace KT.ShiftIt.Game
     {
         public const float PlayerY = -2.6f;
         public const float ModeAArcRadius = 5.6f;
-        const float BombHeldY = 1.35f;
+        // Was 1.35, which put the 2.05-unit fuse ring straight over the player's head.
+        const float BombHeldY = 1.95f;
 
         ShiftSim _sim;
         RobotView _player;
@@ -90,12 +91,12 @@ namespace KT.ShiftIt.Game
             aimGo.transform.SetParent(_world, false);
             aimGo.transform.localPosition = new Vector3(0f, PlayerY, 0f);
             _aim = aimGo.transform;
-            _aimShaft = AddSprite(_aim, "Shaft", Shapes.RoundedRect(14, 300, 7),
-                                  new Color(1f, 0.95f, 0.5f, 0.85f), 5, 1f);
-            _aimShaft.transform.localPosition = new Vector3(0f, 1.5f, 0f);
-            _aimHead = AddSprite(_aim, "Head", Shapes.TriangleUp(60, 56),
+            _aimShaft = AddSprite(_aim, "Shaft", Shapes.RoundedRect(22, 440, 11),
+                                  new Color(1f, 0.95f, 0.5f, 0.9f), 5, 1f);
+            _aimShaft.transform.localPosition = new Vector3(0f, 2.4f, 0f);
+            _aimHead = AddSprite(_aim, "Head", Shapes.TriangleUp(96, 90),
                                  new Color(1f, 0.95f, 0.5f, 1f), 6, 1f);
-            _aimHead.transform.localPosition = new Vector3(0f, 3.1f, 0f);
+            _aimHead.transform.localPosition = new Vector3(0f, 5.0f, 0f);
             aimGo.SetActive(false);
 
             _mirrorTag = Label.CreateWorld(_world, "MirrorTag", new Vector3(0f, PlayerY + 2.5f, 0f), 46,
@@ -142,7 +143,7 @@ namespace KT.ShiftIt.Game
                 if (_sim.Mode == ControlMode.LeftRight)
                 {
                     _keyLabels[i] = Label.CreateWorld(_world, "Key" + i,
-                                                      p + new Vector3(0f, -1.35f, 0f), 40, Color.white);
+                                                      p + new Vector3(0f, -1.5f, 0f), 92, Color.white);
                 }
             }
             _aim.gameObject.SetActive(_sim.Mode == ControlMode.HoldRelease);

@@ -116,7 +116,9 @@ namespace KT.ShiftIt.PlayTests
                                    90f, "zone " + z);
                 Assert.AreNotEqual(Phase.GameOver, root.Sim.Phase,
                     "the capture run died before reaching zone " + (z + 1));
-                yield return Frames(30);                      // let the ambient motion settle
+                // The wipe runs 0.85 s and the banner 1.5 s after it. Shooting at 30 frames
+                // caught three of the four zones mid-wipe, behind a stripe bar.
+                yield return Frames(170);
                 Shoot(names[z], caps[z] + "  [pass " + root.Sim.Passes + "]");
 
                 if (z == 3) break;

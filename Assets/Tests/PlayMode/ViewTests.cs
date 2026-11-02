@@ -376,29 +376,55 @@ namespace KT.ShiftIt.PlayTests
         // =====================================================================
 
         [UnityTest]
-        public IEnumerator ModeA_AimArrowTurnsRedOverAGapAndGreenOverARobot()
+        public IEnumerator ModeA_AimArrowColourMatchesWhatIsUnderIt_AndHowOftenTheGapIsEvenVisible()
         {
+            // Sampled EVERY frame rather than once after a wait. The first version waited for the
+            // arrow to be over a gap, then read the colour a frame later - by which time the arrow
+            // had usually left the gap again, because the gaps are narrower than one frame of
+            // sweep. That near-miss is itself the finding, so this test now measures it.
+            //
+            // Five robots over a 140 deg arc: each owns 28 deg, of which 24 is robot and 4 is gap.
+            // So 14.3% of the arc is lethal floor. At 140 deg/s and 60 fps the arrow moves 2.3 deg
+            // per frame, so a 4 deg gap spans under two frames; at the 340 deg/s cap it moves
+            // 5.7 deg per frame and the gap can be stepped straight over. The red warning the
+            // player is supposed to react to can therefore never be drawn at all.
             var root = Boot(Plain(), ControlMode.HoldRelease);
             yield return Frames(3);
             yield return Tap(_kb.leftShiftKey);
 
             Press(_kb.leftShiftKey);
-            yield return Frames(3);
+            yield return Frames(2);
             Assert.IsTrue(root.Board.AimArrowShown, "the aim arrow is not drawn while holding");
 
-            yield return Until(() => root.Sim.SlotForAim(root.Sim.AimDeg) >= 0 ||
-                                     root.Sim.Phase != Phase.PlayerHolding, 3f, "the arrow over a robot");
-            yield return null;
-            var onRobot = root.Board.AimArrowColour;
-
-            yield return Until(() => root.Sim.SlotForAim(root.Sim.AimDeg) < 0 ||
-                                     root.Sim.Phase != Phase.PlayerHolding, 3f, "the arrow over a gap");
-            yield return null;
-            var onGap = root.Board.AimArrowColour;
+            int frames = 0, gapFrames = 0, mismatches = 0;
+            while (root.Sim.Phase == Phase.PlayerHolding && frames < 240)
+            {
+                yield return null;
+                if (root.Sim.Phase != Phase.PlayerHolding) break;
+                frames++;
+                bool overGap = root.Sim.SlotForAim(root.Sim.AimDeg) < 0;
+                var c = root.Board.AimArrowColour;
+                bool readsRed = c.r > c.g;
+                if (overGap) gapFrames++;
+                if (overGap != readsRed) mismatches++;
+            }
             Release(_kb.leftShiftKey);
 
-            Assert.Greater(onRobot.g, onRobot.r, "over a robot the arrow should read green");
-            Assert.Greater(onGap.r, onGap.g, "over a gap the arrow should read red");
+            float sweep = root.Config.SweepFor(0);
+            float degPerFrame = sweep * Time.deltaTime;
+            Debug.Log(string.Format(
+                "[SHIFTIT] Mode A arrow: {0} frames held, {1} of them over a gap ({2:P1}), " +
+                "{3} colour mismatches. Sweep {4:0} deg/s ~= {5:0.0} deg/frame against 4 deg gaps.",
+                frames, gapFrames, frames == 0 ? 0f : (float)gapFrames / frames,
+                mismatches, sweep, degPerFrame));
+
+            Assert.Greater(frames, 20, "the hold ended too early to measure anything");
+            Assert.AreEqual(0, mismatches,
+                "the arrow colour disagreed with what was under it on " + mismatches + " frame(s)");
+            // The real point: the warning must be on screen long enough to be seen at all.
+            Assert.Greater(gapFrames, 0,
+                "the arrow never rendered over a gap in " + frames + " frames, so the red warning " +
+                "the player is meant to react to is never actually drawn");
         }
 
         [UnityTest]

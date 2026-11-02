@@ -67,8 +67,8 @@ python Tools/contact_sheet.py "$SHEETS/sheet4_playtests.png" \
   "$REV/playtests/07_game_over_fuse_ran_out.png" "$REV/playtests/08_shield_up.png" \
   "$REV/playtests/09_game_over_shield.png" "$REV/playtests/10_modeA_aiming.png"
 
-python Tools/make_gif.py "$REV/gif_modeB" "$SHEETS/modeB.gif" 20 520
-python Tools/make_gif.py "$REV/gif_modeA" "$SHEETS/modeA.gif" 20 520
+python Tools/make_gif.py "$REV/gif_modeB" "$SHEETS/modeB.gif" 20 420 128
+python Tools/make_gif.py "$REV/gif_modeA" "$SHEETS/modeA.gif" 20 420 128
 
 echo
 echo "=================== done ==================="

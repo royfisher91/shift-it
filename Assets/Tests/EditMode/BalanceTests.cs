@@ -317,6 +317,31 @@ namespace KT.ShiftIt.Tests
         }
 
         [Test]
+        public void ModeA_SweptAcrossRobotWidths_ToFindWhatWouldRescueIt()
+        {
+            // Mode A kills an average player almost entirely through ReleasedBetween - letting go
+            // in a gap. The PERFECT band is NOT the problem: Mode A's band-hit rate is already
+            // about 89% for an average bot. So the question is whether geometry can rescue it.
+            //
+            // Five robots over a 140 degree arc means each owns 28 degrees. At a half-width of 12
+            // that is 24 degrees of robot and 4 of gap, so 14.3% of the arc is lethal floor. At 14
+            // the robots touch and there are no gaps at all - which removes the "release between
+            // robots = the floor" rule entirely. This reports the range so the trade is visible.
+            Log("[SHIFTIT] ===== MODE A: robot half-width sweep (5 robots, 140 deg arc) =====\n");
+            foreach (float half in new[] { 12f, 13f, 14f })
+            {
+                var c = Cfg();
+                c.modeASlotHalfWidthDeg = half;
+                float gap = (c.modeAArcHalfDeg * 2f) / c.modeASlots - half * 2f;
+                foreach (var skill in new[] { BotSkill.Average, BotSkill.Skilled })
+                {
+                    var rs = Sweep(ControlMode.HoldRelease, skill, 60, c);
+                    Log(Report(string.Format("MODE A {0} half={1:0.#} gap={2:0.#}", skill, half, gap), rs));
+                }
+            }
+        }
+
+        [Test]
         public void BalanceTarget_AverageDiesBetween15And35Passes()
         {
             var rs = Sweep(ControlMode.LeftRight, BotSkill.Average, BigRuns);

@@ -303,8 +303,10 @@ namespace KT.ShiftIt.Game
 
         void FadeTells(float dt)
         {
-            Fade(_shieldArc, _shieldAlpha, dt, 10f);
-            Fade(_emptyPad, _emptyAlpha, dt, 10f);
+            // Fading IN can be gentle; fading OUT must be instant, because a shield dropping is
+            // the cue the player is waiting for on a both-blocked turn.
+            Fade(_shieldArc, _shieldAlpha, dt, _shieldAlpha > 0f ? 10f : 26f);
+            Fade(_emptyPad, _emptyAlpha, dt, _emptyAlpha > 0f ? 10f : 26f);
             // The shield arc breathes so it never looks like a static decal.
             if (_shieldAlpha > 0f)
             {

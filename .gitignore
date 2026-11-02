@@ -1,0 +1,50 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Never commit a build or a capture - they go to D:\KT\Builds\ShiftIt and D:\KT\ShiftIt
+/Build/
+/Builds/
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Visual review images are sent in chat, never committed (Roy's visual review rule)
+/Review/
+/Screenshots/
+
+# IDE
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Crash reports
+sysinfo.txt
+crashlytics-build.properties

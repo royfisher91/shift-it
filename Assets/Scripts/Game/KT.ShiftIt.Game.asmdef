@@ -1,0 +1,18 @@
+{
+  "name": "KT.ShiftIt.Game",
+  "rootNamespace": "KT.ShiftIt.Game",
+  "references": [
+    "KT.ShiftIt.Sim",
+    "Unity.InputSystem",
+    "Unity.TextMeshPro"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

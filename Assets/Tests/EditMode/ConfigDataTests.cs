@@ -67,6 +67,41 @@ namespace KT.ShiftIt.Tests
         }
 
         [Test]
+        public void EveryCC0AudioFileIsPresentAndLoadable()
+        {
+            // "An asset existing is not an asset playing" (KT_QUALITY_LESSONS A2). This at least
+            // proves the files are in the build and decode; ViewTests proves they are wired.
+            string[] names =
+            {
+                "Audio/music_zone1_factory",
+                "Audio/music_zone2_rooftop",
+                "Audio/music_zone3_scrapyard",
+                "Audio/music_zone4_launchpad",
+                "Audio/sfx_explosion",
+            };
+            var missing = new List<string>();
+            foreach (var n in names)
+            {
+                var clip = Resources.Load<AudioClip>(n);
+                if (clip == null) { missing.Add(n + " (missing)"); continue; }
+                if (clip.length <= 0.05f) missing.Add(n + " (loaded but " + clip.length + "s long)");
+            }
+            Assert.IsEmpty(missing, "CC0 audio not usable: " + string.Join(", ", missing));
+        }
+
+        [Test]
+        public void MusicLoopsAreLongEnoughToLoopWithoutGrating()
+        {
+            foreach (var n in new[] { "music_zone1_factory", "music_zone2_rooftop",
+                                      "music_zone3_scrapyard", "music_zone4_launchpad" })
+            {
+                var clip = Resources.Load<AudioClip>("Audio/" + n);
+                Assert.IsNotNull(clip, n + " is missing");
+                Assert.Greater(clip.length, 10f, n + " is only " + clip.length + "s - too short to loop");
+            }
+        }
+
+        [Test]
         public void ShippedConfig_IsSaneAndSafe()
         {
             var c = new SimConfig();

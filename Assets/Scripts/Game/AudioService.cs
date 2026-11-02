@@ -32,6 +32,14 @@ namespace KT.ShiftIt.Game
         readonly Dictionary<Sfx, AudioClip> _clips = new Dictionary<Sfx, AudioClip>();
         AudioSource[] _voices;
         int _next;
+
+        // ---- music: two sources so zones can cross-fade rather than cut ----
+        readonly AudioClip[] _zoneMusic = new AudioClip[4];
+        AudioSource[] _musicSrc;
+        int _activeMusic;
+        int _currentZone = -1;
+        float _fade = 1f;
+        public float MusicVolume = 0.55f;
         System.Random _cosmeticRng;      // never the gameplay stream (quality lesson D9)
         bool _muted;
 
@@ -55,6 +63,18 @@ namespace KT.ShiftIt.Game
         void Build()
         {
             // A small pool of voices, so nothing ever allocates a source mid-play.
+            _musicSrc = new AudioSource[2];
+            for (int i = 0; i < _musicSrc.Length; i++)
+            {
+                var m = gameObject.AddComponent<AudioSource>();
+                m.playOnAwake = false;
+                m.loop = true;
+                m.spatialBlend = 0f;
+                m.volume = 0f;
+                m.priority = 0;          // music must not be culled under voice pressure
+                _musicSrc[i] = m;
+            }
+
             _voices = new AudioSource[10];
             for (int i = 0; i < _voices.Length; i++)
             {
@@ -77,6 +97,82 @@ namespace KT.ShiftIt.Game
             _clips[Sfx.ZoneJingle] = Jingle();
             _clips[Sfx.UiHover] = Tick();
             _clips[Sfx.UiPress] = Pop();
+
+            LoadSourcedAudio();
+        }
+
+        /// <summary>
+        /// Swap in the CC0 clips over the synthesised placeholders. Anything that fails to load
+        /// keeps its generated version, so a missing file degrades to "sounds worse" rather than
+        /// "silence", and it says so in the log instead of failing quietly.
+        /// </summary>
+        void LoadSourcedAudio()
+        {
+            var boom = Resources.Load<AudioClip>("Audio/sfx_explosion");
+            if (boom != null) _clips[Sfx.Explosion] = boom;
+            else Debug.LogWarning("[SHIFTIT] Audio/sfx_explosion missing - using the synthesised one.");
+
+            string[] names =
+            {
+                "Audio/music_zone1_factory",
+                "Audio/music_zone2_rooftop",
+                "Audio/music_zone3_scrapyard",
+                "Audio/music_zone4_launchpad",
+            };
+            int found = 0;
+            for (int i = 0; i < names.Length; i++)
+            {
+                _zoneMusic[i] = Resources.Load<AudioClip>(names[i]);
+                if (_zoneMusic[i] != null) found++;
+                else Debug.LogWarning("[SHIFTIT] missing music clip: " + names[i]);
+            }
+            Debug.Log("[SHIFTIT] sourced audio loaded: explosion=" + (boom != null) +
+                      " music=" + found + "/4");
+        }
+
+        /// <summary>
+        /// Cross-fade to this zone's track. Called on a zone change and at boot; calling it with
+        /// the zone already playing does nothing.
+        /// </summary>
+        public void PlayZoneMusic(int zone)
+        {
+            zone = Mathf.Clamp(zone, 0, _zoneMusic.Length - 1);
+            if (zone == _currentZone) return;
+            var clip = _zoneMusic[zone];
+            if (clip == null) return;
+
+            _currentZone = zone;
+            int next = 1 - _activeMusic;
+            var src = _musicSrc[next];
+            src.clip = clip;
+            src.loop = true;
+            src.volume = 0f;
+            src.Play();
+            _activeMusic = next;
+            _fade = 0f;
+        }
+
+        public void StopMusic()
+        {
+            _currentZone = -1;
+            for (int i = 0; i < _musicSrc.Length; i++) if (_musicSrc[i] != null) _musicSrc[i].Stop();
+        }
+
+        /// <summary>Drive the cross-fade. Called once a frame from GameRoot.</summary>
+        public void Tick(float dt)
+        {
+            if (_musicSrc == null) return;
+            if (_fade < 1f) _fade = Mathf.Clamp01(_fade + dt / 1.2f);
+            float target = _muted ? 0f : MusicVolume;
+            for (int i = 0; i < _musicSrc.Length; i++)
+            {
+                if (_musicSrc[i] == null) continue;
+                bool live = i == _activeMusic;
+                float want = live ? target * _fade : target * (1f - _fade);
+                _musicSrc[i].volume = Mathf.MoveTowards(_musicSrc[i].volume, want, dt * 2f);
+                if (!live && _musicSrc[i].volume <= 0.001f && _musicSrc[i].isPlaying && _fade >= 1f)
+                    _musicSrc[i].Stop();
+            }
         }
 
         /// <summary>Play a named event. Pitch varies slightly so a repeated sound never grates.</summary>
@@ -94,16 +190,24 @@ namespace KT.ShiftIt.Game
             src.Play();
         }
 
+        /// <summary>Stops the one-shot voices. Music is left alone unless StopMusic is called.</summary>
         public void StopAll()
         {
             for (int i = 0; i < _voices.Length; i++) if (_voices[i] != null) _voices[i].Stop();
+        }
+
+        /// <summary>Everything, including music. Used on focus loss and on quit.</summary>
+        public void StopEverything()
+        {
+            StopAll();
+            StopMusic();
         }
 
         void OnApplicationFocus(bool focused)
         {
             // Standing KT rule: game sound never plays when the window is not focused.
             AudioListener.pause = !focused;
-            if (!focused) StopAll();
+            if (!focused) StopAll();       // music is paused by the listener, not stopped
         }
 
         void OnApplicationQuit()

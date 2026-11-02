@@ -46,16 +46,17 @@ Every one of those gets one short hint line the first time you meet it, and neve
 
 ---
 
-## Two control modes
+## Controls
 
-Both are built, and the title screen switches between them with **Tab** or the mouse.
+**`LEFT SHIFT` throws left. `RIGHT SHIFT` throws right.** That is the entire control scheme. On a
+phone, tap the left or right half of the screen. `ESC` offers a way out of the desktop build.
 
-- **MODE B — Left / Right.** `LEFT SHIFT` throws left, `RIGHT SHIFT` throws right. Two robots.
-- **MODE A — Hold & Release.** Hold Shift and an aim arrow sweeps across five robots in an arc;
-  release to throw. Let go between two robots and the bomb hits the floor. The fuse burns half
-  again as fast while you hold.
-
----
+A second scheme — hold Shift while an aim arrow sweeps five robots in an arc, release to throw — was
+built and measured alongside this one, and cut. It left an average player dying at a median of 7
+passes against a target of 15–35, and 88% of those deaths were the single mechanical slip of
+releasing between two robots rather than any decision the player made. The numbers are in
+`Docs/STAGE1_REPORT.md`; the code is on the `stage1-both-modes` branch and still behind the
+`GameRoot.ModeAEnabled` flag, where its tests keep running so it cannot rot.
 
 ## Running it
 
@@ -123,4 +124,10 @@ are handled rather than ignored:
 
 ## Licence
 
-Code and generated assets: see `LICENSE`.
+**Code: MIT** (`LICENSE`). **All art and audio: CC0 1.0 Universal** — see `ASSETS_LICENCE.md`, which
+records the source URL and licence of every downloaded file.
+
+Every sprite in the game is generated at runtime from code, so the art is original by construction.
+The only downloaded assets are five CC0 audio files. Nothing in this repository carries an
+attribution obligation, and nothing from a private or non-redistributable library is committed or
+referenced.

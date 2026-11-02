@@ -38,6 +38,13 @@ namespace KT.ShiftIt.Game
         /// <summary>Set for one frame when the mode toggle was asked for (Tab, or the title button).</summary>
         public bool ToggleModePressed { get; private set; }
 
+        /// <summary>
+        /// Set for one frame on an Escape press. Escape is the ONLY non-Shift key the game reads,
+        /// and only to offer a way out of the Windows build - it does nothing in gameplay, so the
+        /// "Shift keys only" rule still holds for everything the player actually does.
+        /// </summary>
+        public bool QuitPressed { get; private set; }
+
         /// <summary>Diagnostics for the WebGL report: have we ever seen each key, on each backend?</summary>
         public bool EverSawLeft { get; private set; }
         public bool EverSawRight { get; private set; }
@@ -52,7 +59,8 @@ namespace KT.ShiftIt.Game
         public void Poll()
         {
             ToggleModePressed = false;
-            bool kbLeft = false, kbRight = false, toggle = false;
+            QuitPressed = false;
+            bool kbLeft = false, kbRight = false, toggle = false, quit = false;
 
             switch (Backend)
             {
@@ -64,6 +72,7 @@ namespace KT.ShiftIt.Game
                         kbLeft = kb.leftShiftKey.isPressed;
                         kbRight = kb.rightShiftKey.isPressed;
                         toggle = kb.tabKey.wasPressedThisFrame;
+                        quit = kb.escapeKey.wasPressedThisFrame;
                     }
 #endif
                     break;
@@ -73,6 +82,7 @@ namespace KT.ShiftIt.Game
                     kbLeft = Input.GetKey(KeyCode.LeftShift);
                     kbRight = Input.GetKey(KeyCode.RightShift);
                     toggle = Input.GetKeyDown(KeyCode.Tab);
+                    quit = Input.GetKeyDown(KeyCode.Escape);
 #endif
                     break;
             }
@@ -82,6 +92,7 @@ namespace KT.ShiftIt.Game
             LeftDown = kbLeft || _touchLeft;
             RightDown = kbRight || _touchRight;
             ToggleModePressed = toggle;
+            QuitPressed = quit;
 
             if (LeftDown) EverSawLeft = true;
             if (RightDown) EverSawRight = true;

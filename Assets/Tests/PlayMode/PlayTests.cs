@@ -136,20 +136,73 @@ namespace KT.ShiftIt.PlayTests
         }
 
         [UnityTest]
-        public IEnumerator Title_TabTogglesBetweenTheTwoModes()
+        public IEnumerator Title_TabNoLongerOffersModeA_ButTheCodeStillWorks()
         {
+            // Roy picked Mode B at the Stage 1 gate, so the player's route into Mode A is closed.
+            // The flag shuts the DOOR, not the room: SetMode still works, which is why every Mode A
+            // test in this suite keeps running and the code cannot quietly rot.
+            Assert.IsFalse(GameRoot.ModeAEnabled, "Mode A must not ship");
+
             var root = Boot(Plain(), ControlMode.LeftRight);
             yield return Frames(2);
             Assert.AreEqual(ControlMode.LeftRight, root.Sim.Mode);
 
             yield return Tap(_kb.tabKey);
-            Assert.AreEqual(ControlMode.HoldRelease, root.Sim.Mode, "Tab must switch mode");
             yield return Frames(2);
-            Assert.AreEqual(5, root.Board.Receivers.Length, "Mode A needs five receivers");
-            Assert.IsNotNull(Capture.Shot(root.Cam, "03_title_modeA"));
+            Assert.AreEqual(ControlMode.LeftRight, root.Sim.Mode,
+                "Tab must no longer switch mode in the shipping build");
+            Assert.AreEqual(2, root.Board.Receivers.Length, "still the two-robot board");
 
-            yield return Tap(_kb.tabKey);
-            Assert.AreEqual(ControlMode.LeftRight, root.Sim.Mode, "Tab must switch back");
+            // ...and the mode itself is still reachable programmatically, so it stays tested.
+            root.SetMode(ControlMode.HoldRelease);
+            yield return Frames(2);
+            Assert.AreEqual(5, root.Board.Receivers.Length,
+                "SetMode must still build Mode A, or its tests are testing nothing");
+        }
+
+        [UnityTest]
+        public IEnumerator Escape_OpensAConfirmThatPausesTheGame_AndShiftCarriesOn()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(2);
+            yield return Tap(_kb.leftShiftKey);                  // start playing
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase);
+
+            yield return Tap(_kb.escapeKey);
+            yield return Frames(2);
+            Assert.IsTrue(root.QuitConfirmOpen, "Escape must open the quit confirm");
+            Assert.IsTrue(root.Hud.QuitConfirmShown, "...and it must be on screen");
+
+            // The fuse must STOP. A confirm box that lets the bomb keep burning is a trap.
+            float fuseAtOpen = root.Sim.Fuse;
+            yield return Frames(45);
+            Assert.AreEqual(fuseAtOpen, root.Sim.Fuse, 0.0001f,
+                "the fuse kept burning while the quit confirm was open");
+
+            // A fresh Shift carries on.
+            float t = 0f;
+            while (t < 0.4f) { t += Time.deltaTime; yield return null; }
+            yield return Tap(_kb.leftShiftKey);
+            yield return Frames(2);
+            Assert.IsFalse(root.QuitConfirmOpen, "Shift must dismiss the confirm");
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase, "and play must resume");
+
+            yield return Frames(20);
+            Assert.Less(root.Sim.Fuse, fuseAtOpen, "the fuse must start burning again");
+        }
+
+        [UnityTest]
+        public IEnumerator Escape_DoesNotThrowTheBombOrCountAsAPass()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(2);
+            yield return Tap(_kb.leftShiftKey);
+            int passes = root.Sim.Passes;
+
+            yield return Tap(_kb.escapeKey);
+            yield return Frames(3);
+            Assert.AreEqual(passes, root.Sim.Passes, "Escape must not throw the bomb");
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase);
         }
 
         // =====================================================================

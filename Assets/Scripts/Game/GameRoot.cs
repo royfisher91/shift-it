@@ -18,6 +18,19 @@ namespace KT.ShiftIt.Game
         const string PrefHints = "shiftit.hints";
         const string PrefMode = "shiftit.mode";
 
+        /// <summary>
+        /// MODE A (hold and release) is built, tested and measured, but it does not ship: Roy chose
+        /// Mode B at the Stage 1 gate on the numbers (Mode A left an average player dying at a
+        /// median of 7 passes against a target of 15-35, with 88% of those deaths being the single
+        /// slip of releasing between two robots).
+        ///
+        /// It is behind a flag rather than deleted, and the Stage 1 build with both modes is kept on
+        /// the `stage1-both-modes` branch. The flag only closes the PLAYER's route in - ToggleMode
+        /// and the title screen - while SetMode still works, so every Mode A test keeps running and
+        /// the code cannot quietly rot. Set this true to put it back.
+        /// </summary>
+        public const bool ModeAEnabled = false;
+
         [Tooltip("Leave 0 to seed from the clock. Set a value to reproduce a run exactly.")]
         public int Seed = 0;
         public bool StartMuted = false;
@@ -42,6 +55,16 @@ namespace KT.ShiftIt.Game
 
         float _tickAccum;
         bool _focused = true;
+        bool _quitConfirm;
+        float _quitLock;
+        bool _prevShift;
+
+        /// <summary>
+        /// A browser tab cannot be closed by the page, and Escape there is the browser's own
+        /// fullscreen-exit key, so the quit prompt is desktop-only.
+        /// </summary>
+        public bool QuitAvailable => Application.platform != RuntimePlatform.WebGLPlayer;
+        public bool QuitConfirmOpen => _quitConfirm;
 
         void Awake()
         {
@@ -57,6 +80,8 @@ namespace KT.ShiftIt.Game
             // 3. simulation
             int seed = Seed != 0 ? Seed : System.Environment.TickCount;
             var mode = (ControlMode)PlayerPrefs.GetInt(PrefMode, (int)ControlMode.LeftRight);
+            // A saved preference from a build that still had Mode A must not resurrect it.
+            if (!ModeAEnabled) mode = ControlMode.LeftRight;
             Sim = new ShiftSim(Config, seed, mode);
             Sim.RestoreShownHints(LoadShownHints());
             Sim.Best = PlayerPrefs.GetInt(BestKey(mode), 0);
@@ -77,11 +102,14 @@ namespace KT.ShiftIt.Game
 
             // 6. wiring that needs everything to exist
             Hud.ModeButton.onClick.AddListener(ToggleMode);
+            Hud.QuitYesButton.onClick.AddListener(QuitNow);
+            Hud.QuitNoButton.onClick.AddListener(() => SetQuitConfirm(false));
             Hud.SetStickyTip(StickyTipForPlatform());
 
             Sim.GoToTitle();
             Board.EnsureLayout();
             Zones.Show(0);
+            Audio.PlayZoneMusic(0);
 
             sw.Stop();
             Debug.Log("[SHIFTIT] boot ok. mode=" + mode + " seed=" + seed +
@@ -172,6 +200,7 @@ namespace KT.ShiftIt.Game
 
         public void ToggleMode()
         {
+            if (!ModeAEnabled) return;      // there is nothing to toggle to
             if (Sim.Phase != Phase.Title) return;
             var next = Sim.Mode == ControlMode.LeftRight ? ControlMode.HoldRelease : ControlMode.LeftRight;
             SetMode(next);
@@ -194,6 +223,35 @@ namespace KT.ShiftIt.Game
 
             // ---- input -> simulation ----
             Input.Poll();
+
+            // ---- quit prompt: it PAUSES the game, because a confirm box that lets the fuse keep
+            //      burning would be a trap rather than a courtesy ----
+            bool shiftNow = Input.LeftDown || Input.RightDown;
+            bool shiftEdge = shiftNow && !_prevShift;
+            _prevShift = shiftNow;
+
+            if (_quitConfirm)
+            {
+                if (_quitLock > 0f) _quitLock -= udt;
+                // A fresh Shift press carries on; Escape again quits. The short lock stops a
+                // double-tap of Escape quitting before the box has even been read.
+                if (shiftEdge) SetQuitConfirm(false);
+                else if (Input.QuitPressed && _quitLock <= 0f) { QuitNow(); return; }
+
+                Zones.Tick(0f);
+                Board.Tick(0f);
+                Juice.Tick(udt);
+                Hud.Tick(Sim, 0f, udt);
+                Audio.Tick(udt);
+                return;                       // the simulation does not tick while this is open
+            }
+
+            if (Input.QuitPressed && QuitAvailable && Sim.Phase != Phase.Failing)
+            {
+                SetQuitConfirm(true);
+                return;
+            }
+
             if (_focused) Input.Apply(Sim);
 
             if (Input.ToggleModePressed) ToggleMode();
@@ -209,6 +267,7 @@ namespace KT.ShiftIt.Game
             Board.Tick(dt);
             Juice.Tick(udt);
             Hud.Tick(Sim, dt, udt);
+            Audio.Tick(udt);
 
             TickFuseFeedback(dt);
         }
@@ -292,6 +351,7 @@ namespace KT.ShiftIt.Game
                         Zones.Show(e.IntValue);
                         Hud.ZoneWipe(e.IntValue);
                         Audio.Play(Sfx.ZoneJingle);
+                        Audio.PlayZoneMusic(e.IntValue);
                         break;
 
                     case SimEventKind.HintShown:
@@ -310,6 +370,7 @@ namespace KT.ShiftIt.Game
 
                     case SimEventKind.Started:
                         Zones.Show(0);
+                        Audio.PlayZoneMusic(0);
                         break;
                 }
             }
@@ -342,6 +403,38 @@ namespace KT.ShiftIt.Game
             Board.KillAll();
         }
 
+        public void SetQuitConfirm(bool on)
+        {
+            if (_quitConfirm == on) return;
+            _quitConfirm = on;
+            _quitLock = on ? 0.3f : 0f;
+            if (on)
+            {
+                // Let go of everything, so a Shift that was already down cannot instantly dismiss
+                // the box the player has just asked for.
+                Input.Clear(Sim);
+                _prevShift = false;
+                Audio.StopAll();
+                Audio.Play(Sfx.UiPress);
+            }
+            Hud.ShowQuitConfirm(on);
+        }
+
+        public void QuitNow()
+        {
+            PlayerPrefs.SetInt(BestKey(Sim.Mode), Sim.Best);
+            SaveShownHints();
+            PlayerPrefs.Save();
+            Audio.StopEverything();
+            WindowsAccessibility.RestoreNow();
+            Debug.Log("[SHIFTIT] quitting at the player's request.");
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
         void OnApplicationFocus(bool focus)
         {
             _focused = focus;
@@ -359,10 +452,11 @@ namespace KT.ShiftIt.Game
             PlayerPrefs.SetInt(BestKey(Sim.Mode), Sim.Best);
             SaveShownHints();
             PlayerPrefs.Save();
+            Audio.StopEverything();
             WindowsAccessibility.RestoreNow();
         }
 
-        /// <summary>Wipe the saved best and hints. Used by the automated tests.</summary>
+        /// <summary>Clear the saved best and hints. Used by the automated tests.</summary>
         public static void ClearSavedProgress()
         {
             PlayerPrefs.DeleteKey(PrefBestA);

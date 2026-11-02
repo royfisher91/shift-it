@@ -33,7 +33,7 @@ namespace KT.ShiftIt.Sim
         public float bandHighStart = 0.42f;
         public float bandHighEnd = 0.30f;
         /// <summary>Passes over which bandHigh narrows from Start to End.</summary>
-        public float bandNarrowOverPasses = 40f;
+        public float bandNarrowOverPasses = 28f;
 
         /// <summary>
         /// Throws inside this fraction of the fuse elapsed score nothing ("RUSHED").
@@ -90,8 +90,8 @@ namespace KT.ShiftIt.Sim
         // ---- Twist chances ----------------------------------------------------------
         public float chanceHot = 0.20f;
         public float chanceDud = 0.18f;
-        public float chanceMirrored = 0.25f;
-        public float chanceBothBlocked = 0.25f;
+        public float chanceMirrored = 0.45f;
+        public float chanceBothBlocked = 0.45f;
         public float chanceSwap = 0.35f;
 
         /// <summary>
@@ -99,9 +99,9 @@ namespace KT.ShiftIt.Sim
         /// unlock and blockerRampEndPass. This is the main difficulty dial and the one number
         /// the 20-run balance sweep tunes. Roy's spec did not fix it.
         /// </summary>
-        public float blockerChanceAtUnlock = 0.35f;
-        public float blockerChanceAtEnd = 0.85f;
-        public int blockerRampEndPass = 40;
+        public float blockerChanceAtUnlock = 0.55f;
+        public float blockerChanceAtEnd = 0.98f;
+        public int blockerRampEndPass = 26;
         /// <summary>
         /// The pass at which blockers start appearing at all. Separate from unlockShield on
         /// purpose: tying the two together meant a test could not force one blocker KIND without

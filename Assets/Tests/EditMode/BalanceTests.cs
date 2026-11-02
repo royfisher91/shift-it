@@ -341,6 +341,86 @@ namespace KT.ShiftIt.Tests
             }
         }
 
+        /// <summary>
+        /// Stage 2 asked for a faster ramp with more blockers while staying inside the targets.
+        /// Rather than guess, this sweeps the three dials that control blocker pressure and prints
+        /// the two numbers that decide it: where a new player dies, and whether a skilled player can
+        /// still reach 60. Run it by name; it is not part of the normal suite.
+        ///
+        ///   Tools/unity.sh tune -runTests -testPlatform EditMode -testFilter ".*TuningSweep.*"
+        /// </summary>
+        [Test, Explicit]
+        public void TuningSweep_FindsTheFasterRamp()
+        {
+            Log("[SHIFTIT] ===== blocker-pressure sweep: target is average median 15-35, skilled max 60+ =====\n");
+            Log("[SHIFTIT]  start   end  rampEnd |  avg median  avg mean | skilled mean  skilled max | verdict\n");
+
+            foreach (float start in new[] { 0.35f, 0.45f, 0.55f })
+            foreach (float end in new[] { 0.85f, 0.92f, 0.98f })
+            foreach (int rampEnd in new[] { 40, 32, 26 })
+            {
+                var c = Cfg();
+                c.blockerChanceAtUnlock = start;
+                c.blockerChanceAtEnd = end;
+                c.blockerRampEndPass = rampEnd;
+
+                var avg = Describe(Sweep(ControlMode.LeftRight, BotSkill.Average, 80, c));
+                var skl = Describe(Sweep(ControlMode.LeftRight, BotSkill.Skilled, 80, c));
+
+                bool inBand = avg.Median >= 15f && avg.Median <= 35f;
+                bool ceiling = skl.Max >= 60f;
+                string verdict = inBand && ceiling ? "OK"
+                               : !inBand ? (avg.Median < 15f ? "too hard" : "too easy")
+                               : "skilled ceiling too low";
+
+                Log(string.Format("[SHIFTIT]   {0:0.00}  {1:0.00}      {2,2} |  {3,10:0} {4,9:0.0} | {5,12:0.0} {6,12:0} | {7}\n",
+                    start, end, rampEnd, avg.Median, avg.Mean, skl.Mean, skl.Max, verdict));
+            }
+        }
+
+        /// <summary>
+        /// Second tuning sweep. The first one showed that blocker FREQUENCY is a weak dial: pushing
+        /// it from 0.35 to 0.98 moved an average player's median only from 26 to 22, because what
+        /// kills that player is failing to READ a turn, not how often a turn has something in it.
+        ///
+        /// So this sweeps the dials that change what a turn ASKS of the player: how often the keys
+        /// are mirrored, how often both sides are blocked, and how fast the PERFECT band narrows.
+        /// Blocker pressure is pinned at the top of the first sweep's useful range.
+        ///
+        ///   Tools/unity.sh tune -runTests -testPlatform EditMode -testFilter ".*TuningSweep2.*"
+        /// </summary>
+        [Test, Explicit]
+        public void TuningSweep2_TheDialsThatChangeWhatATurnAsks()
+        {
+            Log("[SHIFTIT] ===== twist-pressure sweep (blockers pinned at 0.55 -> 0.98 by pass 26) =====\n");
+            Log("[SHIFTIT]  mirror  both  bandOver |  avg median  avg mean | skilled mean  skilled max | verdict\n");
+
+            foreach (float mirror in new[] { 0.25f, 0.35f, 0.45f })
+            foreach (float both in new[] { 0.25f, 0.35f, 0.45f })
+            foreach (float bandOver in new[] { 40f, 28f, 20f })
+            {
+                var c = Cfg();
+                c.blockerChanceAtUnlock = 0.55f;
+                c.blockerChanceAtEnd = 0.98f;
+                c.blockerRampEndPass = 26;
+                c.chanceMirrored = mirror;
+                c.chanceBothBlocked = both;
+                c.bandNarrowOverPasses = bandOver;
+
+                var avg = Describe(Sweep(ControlMode.LeftRight, BotSkill.Average, 80, c));
+                var skl = Describe(Sweep(ControlMode.LeftRight, BotSkill.Skilled, 80, c));
+
+                bool inBand = avg.Median >= 15f && avg.Median <= 35f;
+                bool ceiling = skl.Max >= 60f;
+                string verdict = inBand && ceiling ? "OK"
+                               : !inBand ? (avg.Median < 15f ? "TOO HARD" : "too easy")
+                               : "skilled ceiling too low";
+
+                Log(string.Format("[SHIFTIT]   {0:0.00}  {1:0.00}        {2,2:0} |  {3,10:0} {4,9:0.0} | {5,12:0.0} {6,12:0} | {7}\n",
+                    mirror, both, bandOver, avg.Median, avg.Mean, skl.Mean, skl.Max, verdict));
+            }
+        }
+
         [Test]
         public void BalanceTarget_AverageDiesBetween15And35Passes()
         {

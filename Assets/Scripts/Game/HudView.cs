@@ -28,6 +28,11 @@ namespace KT.ShiftIt.Game
         // Game over
         GameObject _overPanel;
         Label _overTitle, _overReason, _overScore, _overBest, _overRetry;
+        // Quit confirm
+        GameObject _quitPanel;
+        Label _quitTitle, _quitHelp;
+        public Button QuitYesButton { get; private set; }
+        public Button QuitNoButton { get; private set; }
         // Transient
         Label _hint, _banner, _centrePop;
         Image _wipe, _flash;
@@ -142,6 +147,7 @@ namespace KT.ShiftIt.Game
 
             BuildTitle();
             BuildGameOver();
+            BuildQuitConfirm();
         }
 
         void BuildTitle()
@@ -173,7 +179,9 @@ namespace KT.ShiftIt.Game
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -30f), new Vector2(1700f, 80f));
             _modeHelp = Label.Create(_titlePanel.transform, "ModeHelp", 38, new Color(0.75f, 0.8f, 0.9f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -92f), new Vector2(1700f, 60f));
-            _modeHelp.SetText("TAB or click to change mode");
+            // With Mode A off there is nothing to switch to, so the line becomes a plain control
+            // reminder instead of a toggle, and the mouse target goes with it.
+            _modeHelp.SetText(GameRoot.ModeAEnabled ? "TAB or click to change mode" : "");
             _startLine = Label.Create(_titlePanel.transform, "Start", 72, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1700f, 100f));
             _startLine.SetText("PRESS SHIFT TO START");
@@ -183,7 +191,8 @@ namespace KT.ShiftIt.Game
 
             // The mode line is a real button so the title screen works with the mouse alone.
             var btn = _modeLine.gameObject.AddComponent<Button>();
-            _modeLine.Raw.raycastTarget = true;
+            _modeLine.Raw.raycastTarget = GameRoot.ModeAEnabled;
+            btn.interactable = GameRoot.ModeAEnabled;
             btn.transition = Selectable.Transition.None;
             ModeButton = btn;
         }
@@ -224,6 +233,73 @@ namespace KT.ShiftIt.Game
             _overPanel.SetActive(false);
         }
 
+        void BuildQuitConfirm()
+        {
+            _quitPanel = new GameObject("QuitConfirm");
+            _quitPanel.transform.SetParent(_root, false);
+            var rt = _quitPanel.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+
+            var dim = new GameObject("Dim");
+            dim.transform.SetParent(_quitPanel.transform, false);
+            var di = dim.AddComponent<Image>();
+            di.sprite = Shapes.Block();
+            di.color = new Color(0.02f, 0.02f, 0.04f, 0.78f);
+            var drt = dim.GetComponent<RectTransform>();
+            drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one;
+            drt.offsetMin = Vector2.zero; drt.offsetMax = Vector2.zero;
+
+            _quitTitle = Label.Create(_quitPanel.transform, "QuitTitle", 110, new Color(1f, 0.82f, 0.16f))
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(1700f, 160f))
+                .SetOutline(6f);
+            _quitTitle.SetText("QUIT SHIFT IT?");
+            _quitHelp = Label.Create(_quitPanel.transform, "QuitHelp", 40, new Color(0.78f, 0.82f, 0.9f))
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), new Vector2(1700f, 70f));
+            _quitHelp.SetText("ESC again to quit     SHIFT to carry on     or click");
+
+            QuitYesButton = MakeButton(_quitPanel.transform, "QuitYes", "QUIT",
+                                       new Vector2(-230f, 30f), new Color(0.72f, 0.22f, 0.18f));
+            QuitNoButton = MakeButton(_quitPanel.transform, "QuitNo", "KEEP PLAYING",
+                                      new Vector2(230f, 30f), new Color(0.22f, 0.46f, 0.30f));
+            _quitPanel.SetActive(false);
+        }
+
+        /// <summary>A real clickable button with hover and press states, per the standing KT rule.</summary>
+        Button MakeButton(Transform parent, string name, string text, Vector2 pos, Color colour)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.sprite = Shapes.RoundedRect(360, 110, 18);
+            img.color = colour;
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(400f, 120f);
+            rt.anchoredPosition = pos;
+
+            var btn = go.AddComponent<Button>();
+            btn.targetGraphic = img;
+            var colours = btn.colors;
+            colours.normalColor = Color.white;
+            colours.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
+            colours.pressedColor = new Color(0.78f, 0.78f, 0.78f, 1f);
+            colours.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f);
+            btn.colors = colours;
+
+            var l = Label.Create(go.transform, "Text", 46, Color.white);
+            l.SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(400f, 120f));
+            l.SetText(text);
+            return btn;
+        }
+
+        public void ShowQuitConfirm(bool on)
+        {
+            if (_quitPanel.activeSelf != on) _quitPanel.SetActive(on);
+        }
+
+        public bool QuitConfirmShown => _quitPanel != null && _quitPanel.activeSelf;
+
         // =====================================================================
 
         public void SetStickyTip(string s) => _stickyTip.SetText(s);
@@ -262,9 +338,16 @@ namespace KT.ShiftIt.Game
             if (_titlePanel.activeSelf != title) _titlePanel.SetActive(title);
             if (title)
             {
-                _modeLine.SetText(sim.Mode == ControlMode.LeftRight
-                    ? "MODE B  -  LEFT / RIGHT SHIFT"
-                    : "MODE A  -  HOLD & RELEASE");
+                if (GameRoot.ModeAEnabled)
+                {
+                    _modeLine.SetText(sim.Mode == ControlMode.LeftRight
+                        ? "MODE B  -  LEFT / RIGHT SHIFT"
+                        : "MODE A  -  HOLD & RELEASE");
+                }
+                else
+                {
+                    _modeLine.SetText("LEFT SHIFT throws left     RIGHT SHIFT throws right");
+                }
                 // Blinking start prompt.
                 float b = Mathf.Repeat(Time.unscaledTime * 1.6f, 1f) < 0.62f ? 1f : 0.18f;
                 _startLine.SetAlpha(b);

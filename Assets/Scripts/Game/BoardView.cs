@@ -14,7 +14,10 @@ namespace KT.ShiftIt.Game
     public sealed class BoardView : MonoBehaviour
     {
         public const float PlayerY = -2.6f;
-        public const float ModeAArcRadius = 5.6f;
+        // 5.6 put the five robots in a cramped band only 2.5 units tall; 6.3 spreads
+        // them over the upper screen. The arc ANGLE is unchanged, so this alters how
+        // Mode A looks and not how it plays - the measured balance still applies.
+        public const float ModeAArcRadius = 6.3f;
         // Was 1.35, which put the 2.05-unit fuse ring straight over the player's head.
         const float BombHeldY = 1.95f;
 
@@ -138,7 +141,7 @@ namespace KT.ShiftIt.Game
                 Vector3 p = SlotPosition(i);
                 _receivers[i] = RobotView.Create(_world, "Receiver" + i, p,
                                                  ReceiverColours[i % ReceiverColours.Length], false,
-                                                 _sim.Mode == ControlMode.LeftRight ? 1.0f : 0.78f);
+                                                 _sim.Mode == ControlMode.LeftRight ? 1.0f : 0.88f);
                 // The brief: ALWAYS show the L-SHIFT / R-SHIFT labels under the two robots in Mode B.
                 if (_sim.Mode == ControlMode.LeftRight)
                 {

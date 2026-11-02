@@ -92,8 +92,8 @@ namespace KT.ShiftIt.Game
             // ---------- transient ----------
             // Sits high and clear: it used to overlap the PERFECT pop at y=150 and, in Mode A,
             // the topmost robot of the arc.
-            _hint = Label.Create(_root, "Hint", 52, new Color(1f, 0.95f, 0.5f))
-                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -176f), new Vector2(1500f, 80f));
+            _hint = Label.Create(_root, "Hint", 54, new Color(1f, 0.95f, 0.5f))
+                .SetAnchored(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 96f), new Vector2(1600f, 84f));
             _banner = Label.Create(_root, "Banner", 110, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(1900f, 160f));
             _centrePop = Label.Create(_root, "CentrePop", 92, new Color(0.5f, 1f, 0.6f))
@@ -294,7 +294,7 @@ namespace KT.ShiftIt.Game
                 _hintTimer -= unscaledDt;
                 float a = Mathf.Clamp01(_hintTimer < 0.5f ? _hintTimer / 0.5f : 1f);
                 _hint.SetAlpha(a);
-                _hint.Rect.anchoredPosition = new Vector2(0f, -176f - (1f - a) * 14f);
+                _hint.Rect.anchoredPosition = new Vector2(0f, 96f - (1f - a) * 14f);
             }
             else _hint.SetAlpha(0f);
 

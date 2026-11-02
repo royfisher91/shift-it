@@ -48,3 +48,8 @@ desktop.ini
 # Crash reports
 sysinfo.txt
 crashlytics-build.properties
+
+# Unity's PlayMode test runner creates and removes this scene around each run. One got committed
+# during Stage 1; this keeps it out.
+/Assets/InitTestScene*.unity
+/Assets/InitTestScene*.unity.meta

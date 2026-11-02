@@ -54,6 +54,9 @@ namespace KT.ShiftIt.Sim
         public float BandLow { get; private set; }
         public float BandHigh { get; private set; }
 
+        /// <summary>Mode A: how far off a robot's centre the last release was, in degrees.</summary>
+        public float LastAimErrorDeg { get; private set; }
+
         // ---- input edge tracking ----
         bool _leftDown, _rightDown;
         float _leftHeld, _rightHeld;
@@ -153,7 +156,11 @@ namespace KT.ShiftIt.Sim
                     {
                         Holding = true;
                         HoldTime = 0f;
-                        AimDeg = -Cfg.modeAArcHalfDeg;
+                        // Start ON the first robot, not at the edge of the arc. The edge is a gap,
+                        // so starting there meant a nervous press-and-release in the same instant
+                        // threw the bomb at thin air and killed the player for touching the key.
+                        // A tap now throws at the leftmost robot, which is a real decision.
+                        AimDeg = SlotCentreDeg(0);
                         AimDir = 1;
                         ShowHint(Hint.FirstCatchModeA_Release);
                     }
@@ -402,13 +409,27 @@ namespace KT.ShiftIt.Sim
                 case Blocker.Nope: Explode(FailReason.ThrewAtNope); return;
             }
 
-            // A good throw. Quality comes from where the ring end sits.
+            // A good throw. Quality normally comes from where the ring's tip sits.
             float frac = FuseFraction;
             float elapsed = 1f - frac;
             ThrowQuality q;
-            if (Cfg.rushedBelowElapsedFraction > 0f && elapsed < Cfg.rushedBelowElapsedFraction) q = ThrowQuality.Rushed;
-            else if (frac >= BandLow && frac <= BandHigh) q = ThrowQuality.Perfect;
-            else q = ThrowQuality.Normal;
+            if (Cfg.rushedBelowElapsedFraction > 0f && elapsed < Cfg.rushedBelowElapsedFraction)
+            {
+                q = ThrowQuality.Rushed;
+            }
+            else if (Mode == ControlMode.HoldRelease && Cfg.modeAPerfectWithinDeg > 0f)
+            {
+                // Mode A variant: judge the PERFECT on how close to the robot's centre the arrow
+                // was, so the mode has one skill to master rather than two at once.
+                float off = AimDeg - SlotCentreDeg(slot);
+                if (off < 0f) off = -off;
+                LastAimErrorDeg = off;
+                q = off <= Cfg.modeAPerfectWithinDeg ? ThrowQuality.Perfect : ThrowQuality.Normal;
+            }
+            else
+            {
+                q = frac >= BandLow && frac <= BandHigh ? ThrowQuality.Perfect : ThrowQuality.Normal;
+            }
 
             int points;
             if (q == ThrowQuality.Perfect)
@@ -438,7 +459,10 @@ namespace KT.ShiftIt.Sim
         {
             Score += Cfg.dudFizzlePoints;
             Emit(SimEventKind.Fizzle, i: Cfg.dudFizzlePoints);
-            ActiveSlot = -1;
+            // A robot hands over the replacement, so the incoming bomb has somewhere to come FROM.
+            // Leaving this at -1 made the new bomb hop on the spot in the player's own hands.
+            int from = Turn.FirstOpenSlot();
+            ActiveSlot = from >= 0 ? from : 0;
             // The spent dud is cleared away and a fresh bomb comes in on the usual return beat.
             Phase = Phase.ReceiverHolding;
             PhaseTime = 0f;

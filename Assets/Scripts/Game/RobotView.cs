@@ -34,6 +34,8 @@ namespace KT.ShiftIt.Game
         float _shieldAlpha, _emptyAlpha, _zzzAlpha;
         Vector3 _home;
         bool _isPlayer;
+        /// <summary>The scale this robot was built at. Tick must multiply it, not replace it.</summary>
+        float _baseScale = 1f;
 
         static readonly Color Outline = new Color(0.07f, 0.07f, 0.09f, 1f);
 
@@ -50,6 +52,7 @@ namespace KT.ShiftIt.Game
             r._bodyColour = colour;
             r._home = pos;
             r._isPlayer = isPlayer;
+            r._baseScale = scale;
             r._bobPhase = Random.value * 10f;   // cosmetic only - see note in GameRoot about RNG streams
             r.Build();
             return r;
@@ -208,8 +211,8 @@ namespace KT.ShiftIt.Game
 
             transform.localPosition = _home + new Vector3(sx, bobY + sy, 0f);
             float squash = dead ? 0.6f : 1f + Mathf.Sin(_bobPhase * 2f) * 0.02f;
-            transform.localScale = new Vector3(1f / Mathf.Max(0.2f, squash), squash, 1f) *
-                                   (dead ? 0.92f : 1f);
+            float k = _baseScale * (dead ? 0.92f : 1f);
+            transform.localScale = new Vector3(k / Mathf.Max(0.2f, squash), k * squash, 1f);
 
             ApplyFace(dt);
             FadeTells(dt);
@@ -335,6 +338,35 @@ namespace KT.ShiftIt.Game
         {
             _bobPhase += 0.9f * amount;
         }
+
+        // ---- what is actually on screen, for the automated view checks ----
+
+        /// <summary>Opacity of the shield arc. A shielded robot must get this above zero.</summary>
+        public float ShieldAlpha => _shieldArc != null ? _shieldArc.color.a : 0f;
+        /// <summary>Opacity of the dashed ON BREAK pad outline.</summary>
+        public float EmptyPadAlpha => _emptyPad != null ? _emptyPad.color.a : 0f;
+        /// <summary>Peak opacity across the three floating Zzz marks.</summary>
+        public float ZzzAlpha
+        {
+            get
+            {
+                float a = 0f;
+                if (_zzz == null) return 0f;
+                for (int i = 0; i < _zzz.childCount; i++)
+                {
+                    var sr = _zzz.GetChild(i).GetComponent<SpriteRenderer>();
+                    if (sr != null && sr.color.a > a) a = sr.color.a;
+                }
+                return a;
+            }
+        }
+        /// <summary>False when the robot itself is hidden, which is the ON BREAK tell.</summary>
+        public bool BodyVisible => _body != null && _body.enabled;
+        /// <summary>Eye height. A sleeping robot's eyes are shut, so this collapses.</summary>
+        public float EyeScaleY => _eyeL != null ? _eyeL.transform.localScale.y : 1f;
+        /// <summary>Eye colour. The NOPE / dead faces turn the eyes red or grey.</summary>
+        public Color EyeColour => _eyeL != null ? _eyeL.color : Color.white;
+        public string SignText => _sign != null && _sign.Raw != null ? _sign.Raw.text : "";
 
         public void SetHome(Vector3 p) { _home = p; transform.localPosition = p; }
         public Vector3 Home => _home;

@@ -65,6 +65,7 @@ namespace KT.ShiftIt.Game
             // (KT_QUALITY_LESSONS B4: a check must read what the player sees).
             _canvas.renderMode = RenderMode.ScreenSpaceCamera;
             _canvas.worldCamera = cam;
+            _cam = cam;
             _canvas.planeDistance = 1f;
             _canvas.sortingOrder = 100;
             var scaler = gameObject.AddComponent<CanvasScaler>();
@@ -207,6 +208,18 @@ namespace KT.ShiftIt.Game
         // =====================================================================
 
         public void SetStickyTip(string s) => _stickyTip.SetText(s);
+
+        // ---- what the player can actually read, for the automated view checks ----
+        public string ScoreText => _score.Raw.text;
+        public string ComboText => _combo.gameObject.activeSelf ? _combo.Raw.text : "";
+        public string BestText => _best.Raw.text;
+        public string ZoneText => _zone.Raw.text;
+        public string PassesText => _passes.Raw.text;
+        public string HintText => _hint.Raw.color.a > 0.05f ? _hint.Raw.text : "";
+        public string ReasonText => _overReason.Raw.text;
+        public bool TitleShown => _titlePanel.activeSelf;
+        public bool GameOverShown => _overPanel.activeSelf;
+        public bool ScoreShown => _score.gameObject.activeSelf;
 
         public void Tick(ShiftSim sim, float dt, float unscaledDt)
         {

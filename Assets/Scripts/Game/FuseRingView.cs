@@ -117,6 +117,13 @@ namespace KT.ShiftIt.Game
             return rt;
         }
 
+        /// <summary>How much of the ring the fuse arc currently fills, 0..1.</summary>
+        public float FuseFill => _fuseArc != null ? _fuseArc.fillAmount : -1f;
+        /// <summary>The painted width of the green band, 0..1. Zero on a dud, which has no band.</summary>
+        public float BandFill => _band != null && _band.enabled ? _band.fillAmount : 0f;
+        public bool BandShown => _band != null && _band.enabled;
+        public float Alpha => _group != null ? _group.alpha : 0f;
+
         public void SetVisible(bool on)
         {
             if (_group != null) _group.alpha = on ? 1f : 0f;

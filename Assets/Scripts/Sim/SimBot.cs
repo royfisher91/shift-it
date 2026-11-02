@@ -342,7 +342,11 @@ namespace KT.ShiftIt.Sim
             // hand is far less accurate at 340 deg/s than at 140.
             float aimErrorDeg = (float)Gauss(0, P.ReleaseJitterSeconds * sweep);
             float target = _sim.SlotCentreDeg(_targetSlot) + aimErrorDeg;
-            float toTarget = (target + _sim.Cfg.modeAArcHalfDeg) / Math.Max(1f, sweep);
+            // The arrow starts ON robot 0, not at the edge of the arc, so the distance it has to
+            // travel is measured from there.
+            float travel = target - _sim.SlotCentreDeg(0);
+            if (travel < 0f) travel = -travel;
+            float toTarget = travel / Math.Max(1f, sweep);
 
             if (!_sim.Holding)
             {

@@ -291,6 +291,32 @@ namespace KT.ShiftIt.Tests
         }
 
         [Test]
+        public void ModeA_MeasuredBothWaysForTheGateDecision()
+        {
+            // Mode A as specified asks for two things at the same instant: the arrow on a robot AND
+            // the ring's tip in the green band. Those probabilities multiply. This reports the mode
+            // with Roy's original rule and with PERFECT judged on aim accuracy instead, so the
+            // Stage 1 recommendation rests on numbers rather than on my opinion.
+            var asSpecified = Cfg();
+            var aimJudged = Cfg();
+            aimJudged.modeAPerfectWithinDeg = 6f;
+
+            foreach (var skill in new[] { BotSkill.Average, BotSkill.Skilled })
+            {
+                var a = Sweep(ControlMode.HoldRelease, skill, 60, asSpecified);
+                var b = Sweep(ControlMode.HoldRelease, skill, 60, aimJudged);
+                Log(Report("MODE A " + skill + " band-judged", a));
+                Log(Report("MODE A " + skill + " aim-judged ", b));
+
+                int pa = 0, pb = 0, sa = 0, sb = 0;
+                foreach (var r in a) { pa += r.Perfects; sa += r.Passes; }
+                foreach (var r in b) { pb += r.Perfects; sb += r.Passes; }
+                Log(string.Format("[SHIFTIT]   PERFECT rate {0}: band-judged {1:P1}, aim-judged {2:P1}\n",
+                    skill, sa == 0 ? 0f : (float)pa / sa, sb == 0 ? 0f : (float)pb / sb));
+            }
+        }
+
+        [Test]
         public void BalanceTarget_AverageDiesBetween15And35Passes()
         {
             var rs = Sweep(ControlMode.LeftRight, BotSkill.Average, BigRuns);

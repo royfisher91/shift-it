@@ -296,15 +296,16 @@ namespace KT.ShiftIt.PlayTests
         [UnityTest]
         public IEnumerator ModeA_ReleasingInAGapHitsTheFloor()
         {
-            var c = Plain();
-            c.sweepStartDegPerSec = 0f; c.sweepPerPass = 0f;     // park the arrow at the arc edge
-            var root = Boot(c, ControlMode.HoldRelease);
+            var root = Boot(Plain(), ControlMode.HoldRelease);
             yield return Frames(2);
             yield return Tap(_kb.leftShiftKey);
 
             Press(_kb.leftShiftKey);
-            yield return Frames(3);
-            Assert.AreEqual(-1, root.Sim.SlotForAim(root.Sim.AimDeg), "the arc edge should be a gap");
+            // Sweep until the arrow is actually between two robots, then let go there.
+            yield return Until(() => root.Sim.SlotForAim(root.Sim.AimDeg) < 0 ||
+                                     root.Sim.Phase != Phase.PlayerHolding, 3f, "a gap");
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase, "the fuse ran out before a gap");
+            Assert.AreEqual(-1, root.Sim.SlotForAim(root.Sim.AimDeg), "the arrow should be in a gap");
             Release(_kb.leftShiftKey);
             yield return null;
             Assert.AreEqual(FailReason.ReleasedBetween, root.Sim.Fail);

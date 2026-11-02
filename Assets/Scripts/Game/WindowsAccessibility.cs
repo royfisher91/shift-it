@@ -59,6 +59,65 @@ namespace KT.ShiftIt.Game
         private static bool s_warnedRestore;
         private static string s_status = "not yet run";
 
+        // Crash recovery. SystemParametersInfo is called with fWinIni = 0, so nothing is written to
+        // the user profile and a reboot clears it - but between a crash and the next reboot the
+        // player is left with their Shift shortcuts switched off, and this game is for people who
+        // may well need them. Roy's brief says ALWAYS restore, so the original flags are written to
+        // disk at the moment they are changed and repaired on the next launch if we never got to
+        // put them back. Only dwFlags is ever modified, so only dwFlags needs saving.
+        private const string PrefDirty  = "shiftit.a11y.dirty";
+        private const string PrefSticky = "shiftit.a11y.sticky";
+        private const string PrefFilter = "shiftit.a11y.filter";
+
+        /// <summary>
+        /// If a previous run changed the shortcuts and never restored them - a crash, or a killed
+        /// process - put the saved originals back before doing anything else. Safe to call always.
+        /// </summary>
+        public static void RecoverFromPreviousRun()
+        {
+            try
+            {
+                if (PlayerPrefs.GetInt(PrefDirty, 0) != 1) return;
+
+                STICKYKEYS sk = new STICKYKEYS { cbSize = (uint)Marshal.SizeOf(typeof(STICKYKEYS)) };
+                FILTERKEYS fk = new FILTERKEYS { cbSize = (uint)Marshal.SizeOf(typeof(FILTERKEYS)) };
+                if (SystemParametersInfo(SPI_GETSTICKYKEYS, sk.cbSize, ref sk, 0) &&
+                    SystemParametersInfo(SPI_GETFILTERKEYS, fk.cbSize, ref fk, 0))
+                {
+                    sk.dwFlags = (uint)PlayerPrefs.GetInt(PrefSticky, (int)sk.dwFlags);
+                    fk.dwFlags = (uint)PlayerPrefs.GetInt(PrefFilter, (int)fk.dwFlags);
+                    SystemParametersInfo(SPI_SETSTICKYKEYS, sk.cbSize, ref sk, 0);
+                    SystemParametersInfo(SPI_SETFILTERKEYS, fk.cbSize, ref fk, 0);
+                    Debug.LogWarning("[SHIFTIT] a previous run did not restore the Sticky/Filter Keys " +
+                                     "shortcuts; the saved originals have been put back.");
+                }
+                PlayerPrefs.SetInt(PrefDirty, 0);
+                PlayerPrefs.Save();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SHIFTIT] accessibility crash-recovery failed: " + e.Message);
+            }
+        }
+
+        private static void MarkDirty(uint stickyFlags, uint filterFlags)
+        {
+            try
+            {
+                PlayerPrefs.SetInt(PrefSticky, (int)stickyFlags);
+                PlayerPrefs.SetInt(PrefFilter, (int)filterFlags);
+                PlayerPrefs.SetInt(PrefDirty, 1);
+                PlayerPrefs.Save();
+            }
+            catch { /* a failure here must never stop the game starting */ }
+        }
+
+        private static void MarkClean()
+        {
+            try { PlayerPrefs.SetInt(PrefDirty, 0); PlayerPrefs.Save(); }
+            catch { }
+        }
+
         /// <summary>True while the Sticky/Filter Keys shortcuts are suppressed by this game.</summary>
         public static bool IsSuppressed { get { return s_applied; } }
 
@@ -90,6 +149,7 @@ namespace KT.ShiftIt.Game
 
                 s_origSticky = sk;
                 s_origFilter = fk;
+                MarkDirty(sk.dwFlags, fk.dwFlags);
                 bool stickyWasOn = (sk.dwFlags & SKF_HOTKEYACTIVE) != 0;
                 bool filterWasOn = (fk.dwFlags & FKF_HOTKEYACTIVE) != 0;
 
@@ -153,6 +213,7 @@ namespace KT.ShiftIt.Game
             if (okS && okF)
             {
                 s_applied = false;
+                MarkClean();
                 s_status = "restored originals";
             }
             else
@@ -172,6 +233,7 @@ namespace KT.ShiftIt.Game
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoStart()
         {
+            RecoverFromPreviousRun();
             try
             {
                 if (!s_hooked)
@@ -217,6 +279,8 @@ namespace KT.ShiftIt.Game
 
         /// <summary>No-op on this platform; safe to call from a quit button.</summary>
         public static void RestoreNow() { }
+        /// <summary>No-op off Windows: nothing was ever changed.</summary>
+        public static void RecoverFromPreviousRun() { }
 #endif
     }
 }

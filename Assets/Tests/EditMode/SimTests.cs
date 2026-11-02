@@ -592,13 +592,28 @@ namespace KT.ShiftIt.Tests
         public void ModeA_ReleasingInAGap_IsAFloorHit()
         {
             var c = Plain();
-            c.sweepStartDegPerSec = 0f; c.sweepPerPass = 0f;    // park the arrow at the left edge
             var s = NewSim(c, ControlMode.HoldRelease);
             s.SetKey(Side.Left, true);
-            s.Tick(DT);
-            Assert.AreEqual(-1, s.SlotForAim(s.AimDeg), "the arc edge is not a robot");
+            // Sweep until the arrow is genuinely between two robots, the way a player reaches a gap.
+            int guard = 0;
+            while (s.SlotForAim(s.AimDeg) >= 0 && s.Phase == Phase.PlayerHolding && guard++ < 100000)
+                s.Tick(DT);
+            Assert.AreEqual(Phase.PlayerHolding, s.Phase, "the fuse ran out before a gap was reached");
+            Assert.AreEqual(-1, s.SlotForAim(s.AimDeg), "the arrow should be in a gap");
             s.SetKey(Side.Left, false);
             Assert.AreEqual(FailReason.ReleasedBetween, s.Fail);
+        }
+
+        [Test]
+        public void ModeA_AQuickTapThrowsAtTheFirstRobotRatherThanKilling()
+        {
+            // Feel: pressing and releasing in the same instant must not be fatal.
+            var s = NewSim(Plain(), ControlMode.HoldRelease);
+            s.SetKey(Side.Left, true);
+            s.SetKey(Side.Left, false);
+            Assert.AreNotEqual(FailReason.ReleasedBetween, s.Fail,
+                "a quick tap threw the bomb at thin air");
+            Assert.AreEqual(1, s.Passes, "a quick tap should throw at the first robot");
         }
 
         [Test]

@@ -23,6 +23,9 @@ namespace KT.ShiftIt.Game
         Label[] _keyLabels = new Label[0];
 
         SpriteRenderer _bomb, _bombHighlight, _bombOutline;
+        /// <summary>Holds only the bomb's own art, so the shiver cannot squash the fuse ring.</summary>
+        Transform _bombArt;
+        Transform _bombRoot;
         Label _bombTag;
         FuseRingView _ring;
 
@@ -66,11 +69,15 @@ namespace KT.ShiftIt.Game
             // --- the bomb: black ball, bold outline, sparking fuse (Stage 2 adds the sparks) ---
             var bombGo = new GameObject("Bomb");
             bombGo.transform.SetParent(_world, false);
-            _bombOutline = AddSprite(bombGo.transform, "Outline", Shapes.Circle(96),
+            _bombRoot = bombGo.transform;
+            var artGo = new GameObject("Art");
+            artGo.transform.SetParent(bombGo.transform, false);
+            _bombArt = artGo.transform;
+            _bombOutline = AddSprite(_bombArt, "Outline", Shapes.Circle(96),
                                      new Color(0.05f, 0.05f, 0.06f), 10, 1.16f);
-            _bomb = AddSprite(bombGo.transform, "Body", Shapes.Circle(96),
+            _bomb = AddSprite(_bombArt, "Body", Shapes.Circle(96),
                               new Color(0.16f, 0.16f, 0.19f), 11, 1f);
-            _bombHighlight = AddSprite(bombGo.transform, "Shine", Shapes.Circle(28),
+            _bombHighlight = AddSprite(_bombArt, "Shine", Shapes.Circle(28),
                                        new Color(1f, 1f, 1f, 0.33f), 12, 1f);
             _bombHighlight.transform.localPosition = new Vector3(-0.16f, 0.17f, 0f);
             _bombTag = Label.CreateWorld(bombGo.transform, "Tag", new Vector3(0, 0.02f, 0f), 40, Color.white);
@@ -266,7 +273,7 @@ namespace KT.ShiftIt.Game
                     break;
             }
 
-            _bomb.transform.parent.localPosition = _bombPos;
+            _bombRoot.localPosition = _bombPos;
             _bomb.enabled = visible; _bombOutline.enabled = visible; _bombHighlight.enabled = visible;
 
             // Bomb colour and label by kind.
@@ -293,7 +300,7 @@ namespace KT.ShiftIt.Game
             // The bomb shivers harder as the fuse runs down - readable even without the ring.
             float shiver = held ? Mathf.Clamp01(1f - sim.FuseFraction) : 0f;
             float s = 1f + Mathf.Sin(Time.time * (14f + 40f * shiver)) * 0.035f * (0.4f + shiver);
-            _bomb.transform.parent.localScale = new Vector3(s, 2f - s, 1f);
+            _bombArt.localScale = new Vector3(s, 2f - s, 1f);
 
             _ring.SetVisible(held);
             if (held)
@@ -315,6 +322,19 @@ namespace KT.ShiftIt.Game
         {
             if (slot >= 0 && slot < _receivers.Length) _receivers[slot].Pop();
         }
+
+        /// <summary>The L-SHIFT / R-SHIFT label under receiver i, as the player reads it.</summary>
+        public string KeyLabelText(int i)
+            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Raw.text : "";
+        public Color KeyLabelColour(int i)
+            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Raw.color : Color.white;
+        public string MirrorTagText => _mirrorTag != null && _mirrorTag.Raw.color.a > 0.05f ? _mirrorTag.Raw.text : "";
+        public bool AimArrowShown => _aimHead != null && _aimHead.enabled;
+        public Color AimArrowColour => _aimHead != null ? _aimHead.color : Color.white;
+        public FuseRingView Ring => _ring;
+        public bool BombVisible => _bomb != null && _bomb.enabled;
+        public Color BombColour => _bomb != null ? _bomb.color : Color.white;
+        public string BombTagText => _bombTag != null ? _bombTag.Raw.text : "";
 
         public void PopPlayer() => _player.Pop();
 

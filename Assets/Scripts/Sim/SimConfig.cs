@@ -62,6 +62,18 @@ namespace KT.ShiftIt.Sim
         public float modeAArcHalfDeg = 70f;
         /// <summary>Half-width of one robot's catch window. Gaps are what is left over.</summary>
         public float modeASlotHalfWidthDeg = 12f;
+        /// <summary>
+        /// MODE A ONLY. When greater than 0, a PERFECT is earned by releasing within this many
+        /// degrees of a robot's CENTRE instead of by the fuse band.
+        ///
+        /// Why the option exists: as specified, Mode A asks the player to satisfy two independent
+        /// constraints at the same instant - be on a robot AND have the ring's tip in the green.
+        /// Those multiply, so PERFECT is rare and the mode reads as unfair rather than hard. Judging
+        /// Mode A's PERFECT on aim accuracy instead gives it ONE skill to master, and it is the
+        /// skill the mechanic is actually about. 0 = disabled, which is Roy's original rule.
+        /// See DECISIONS_FOR_ROY D-025; measured both ways in BalanceTests.
+        /// </summary>
+        public float modeAPerfectWithinDeg = 0f;
 
         // ---- Blocker and twist unlocks, by passes completed -------------------------
         public int unlockShield = 5;

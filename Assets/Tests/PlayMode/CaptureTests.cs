@@ -67,6 +67,37 @@ namespace KT.ShiftIt.PlayTests
 
         IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
 
+        /// <summary>
+        /// Advance n frames while playing properly: throw at an open robot once the fuse is past
+        /// halfway, hold duds until they fizzle, and wait out a both-blocked turn until it opens.
+        /// Used wherever a capture needs the game to still be alive when the shutter falls.
+        /// </summary>
+        IEnumerator PlayFrames(int n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                var sim = _root.Sim;
+                if (sim.Phase == Phase.PlayerHolding && sim.Bomb != BombKind.Dud)
+                {
+                    int open = sim.Turn.FirstOpenSlot();
+                    if (open >= 0 && sim.FuseFraction < 0.55f)
+                    {
+                        int logical = sim.Turn.Mirrored ? 1 - open : open;
+                        yield return Tap(logical == 0 ? _kb.leftShiftKey : _kb.rightShiftKey);
+                        i += 2;
+                        continue;
+                    }
+                }
+                else if (sim.Phase == Phase.GameOver)
+                {
+                    yield return Tap(_kb.leftShiftKey);
+                    i += 2;
+                    continue;
+                }
+                yield return null;
+            }
+        }
+
         IEnumerator Tap(ButtonControl k)
         {
             Press(k); yield return null;
@@ -116,29 +147,17 @@ namespace KT.ShiftIt.PlayTests
                                    90f, "zone " + z);
                 Assert.AreNotEqual(Phase.GameOver, root.Sim.Phase,
                     "the capture run died before reaching zone " + (z + 1));
-                // The wipe runs 0.85 s and the banner 1.5 s after it. Shooting at 30 frames
-                // caught three of the four zones mid-wipe, behind a stripe bar.
-                yield return Frames(170);
+                // The wipe runs 0.85 s and the banner 1.5 s after it, so the shot has to wait for
+                // both - but the game does not stop while it waits. Waiting with Frames() let the
+                // fuse run out and killed the run before zone 4, which the before/after sheet
+                // caught as a zone 4 image that had not changed at all.
+                yield return PlayFrames(170);
                 Shoot(names[z], caps[z] + "  [pass " + root.Sim.Passes + "]");
 
                 if (z == 3) break;
-                // Throw cleanly until the next zone.
                 int guard = 0;
-                while (root.Sim.Zone == z && guard++ < 4000)
-                {
-                    if (root.Sim.Phase == Phase.PlayerHolding)
-                    {
-                        int open = root.Sim.Turn.FirstOpenSlot();
-                        if (root.Sim.Bomb == BombKind.Dud) { yield return null; continue; }
-                        if (open >= 0 && root.Sim.FuseFraction < 0.6f)
-                        {
-                            int logical = root.Sim.Turn.Mirrored ? 1 - open : open;
-                            yield return Tap(logical == 0 ? _kb.leftShiftKey : _kb.rightShiftKey);
-                            continue;
-                        }
-                    }
-                    yield return null;
-                }
+                while (root.Sim.Zone == z && root.Sim.Phase != Phase.GameOver && guard++ < 3000)
+                    yield return PlayFrames(1);
             }
         }
 

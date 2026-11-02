@@ -49,14 +49,19 @@ class Abort(Exception):
 
 
 # ---------------------------------------------------------------- local server
+class _Quiet(http.server.SimpleHTTPRequestHandler):
+    """SimpleHTTPRequestHandler without the per-request logging noise."""
+
+    def log_message(self, *a):
+        pass
+
+
 def serve(root, port=0):
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=root)
-
-    class Quiet(handler):
-        def log_message(self, *a):
-            pass
-
-    httpd = socketserver.TCPServer(("127.0.0.1", port), Quiet)
+    # functools.partial returns an object, not a class, so the handler cannot be subclassed from
+    # it - the class is declared above and the directory is bound here instead.
+    handler = functools.partial(_Quiet, directory=root)
+    socketserver.TCPServer.allow_reuse_address = True
+    httpd = socketserver.TCPServer(("127.0.0.1", port), handler)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd, httpd.server_address[1]
 

@@ -52,6 +52,32 @@ The lever that *would* move Mode A is geometry — widening the robots until the
 have measured that too (section 4). But it works by deleting your "release between robots = the bomb
 hits the floor" rule, which is one of Mode A's two real ideas.
 
+### What WOULD rescue Mode A, measured
+
+Since the scoring change failed, I measured the geometry instead. Five robots over a 140 degree
+arc means each owns 28 degrees, and the catch window is what is left after the gaps:
+
+| Robot half-width | Gap between robots | New player, median passes | What kills them |
+|---|---|---|---|
+| **12 deg** (as shipped) | 4 deg | **7** | ReleasedBetween 53 of 60 — **88% one failure** |
+| 13 deg | 2 deg | **14** | ReleasedBetween 41 of 60 |
+| **14 deg** | **0 deg — robots touch** | **23** ✅ | NOPE 26, asleep 18, fuse 16 — **varied** |
+
+So closing the gaps completely does fix it: an average player reaches a median of 23 passes, inside
+your 15–35 band, and the deaths spread across the real twists instead of one mechanical slip. A
+skilled player reaches a median of 41 and a best of 74.
+
+**But it works by deleting the rule.** With no gaps there is no "releasing between robots = the bomb
+hits the floor", which is one of Mode A's two defining ideas. What is left is "the arrow sweeps,
+pick the right robot" — which is Mode B's decision with a timing tax on top, and a skilled ceiling
+of 74 against Mode B's 299.
+
+There is also a readability problem underneath all of this. At 140 deg/s the arrow moves 2.3
+degrees per frame and at your 340 deg/s cap it moves 5.7, against gaps 4 degrees wide. So the gap —
+and the red warning the player is meant to react to — can be **stepped straight over between two
+frames without ever being drawn**. Measured: at the starting sweep the arrow is visibly over a gap
+on only 10 frames out of 116. You cannot ask someone to avoid a hazard they cannot see.
+
 ### The positive case for Mode B
 
 - **The skill is reading, not reflexes.** Mode B's difficulty is identifying which side is throwable
@@ -161,6 +187,96 @@ pass every other test in the suite.
 
 No two failures share a sound: a shield bounce clangs, a dud buzzes, a floor hit buzzes lower.
 Pattern 10 names "one sound for success and failure, differing only in volume" as a red flag.
+
+---
+
+## 4b. Visual review checklist — NEW / FIXED / UNCHANGED
+
+This is the first delivery, so nearly everything is NEW and has no "before" to compare against.
+The FIXED rows are the ones where a first version existed, was photographed, was found wanting and
+was re-photographed — those have a real before/after with a measured pixel difference.
+
+| Item | State | Note |
+|---|---|---|
+| Player robot, screen-face, idle bob | NEW | |
+| Receiver robots, five colours | NEW | |
+| Faces: calm / happy / panic / NOPE / asleep / dead | NEW | panic shakes the eyes independently of the body, adds a sweat drop and blinks the antenna |
+| Bomb, normal | NEW | |
+| Bomb, RED HOT | NEW | glows brighter as it burns down |
+| Bomb, GREEN DUD | NEW | no band on the ring and no ticking — its silence is the tell |
+| Fuse ring: arc, green band, tip marker | NEW | the band is painted over the arc so it cannot disappear underneath it |
+| SHIELD tell | NEW | cyan arc plus red X eyes |
+| ASLEEP tell | NEW | the absence of the idle bob is part of it, and a test asserts the body really is still |
+| ON BREAK tell | NEW | the robot is gone; a dashed pad and a sign remain |
+| NOPE tell (Mode A) | NEW | crossed arms and a red sign |
+| MIRRORED tell | NEW | the key labels swap sides and turn pink |
+| BOTH BLOCKED, and the side that opens | NEW | |
+| Mode A arc and aim arrow | NEW | the arrow colour-codes whatever is under it |
+| Zone 1 FACTORY FLOOR | NEW | |
+| Zone 2 ROOFTOP | NEW | |
+| Zone 3 SCRAPYARD | NEW | |
+| Zone 4 LAUNCHPAD | NEW | |
+| Zone transition and SHIFT! banner and jingle | NEW | |
+| HUD: score, combo, BEST, zone, passes | NEW | |
+| Title screen | NEW | |
+| Game-over card with the reason line | NEW | |
+| Explosion: smoke, fire, flash, screen shake | NEW | |
+| **Explosion flash washing the whole screen white** | **FIXED** | 29.6% pixel difference |
+| **Zone 3 backdrop: shot mid-transition, blobby overhead, invisible rain** | **FIXED** | 18.7% |
+| **Zone 2 backdrop: AC units reading as a grey box with an X** | **FIXED** | 13.5% |
+| **Zone 4 rocket standing behind the bomb, then behind the left robot** | **FIXED** | 30.1% |
+| **Zone 1 lamps completely invisible** | **FIXED** | 8.3% |
+| **Fuse ring sitting on the player's head like a collar** | **FIXED** | visible in the close-up sheet |
+| **L-SHIFT / R-SHIFT labels too small to read** | **FIXED** | 40pt to 92pt |
+| **Safety sign illegible** | **FIXED** | bigger plate, black border, larger type |
+| **Hint line overlapping the PERFECT pop** | **FIXED** | moved below the player |
+| **Dead robot flattening into a pancake** | **FIXED** | it now slumps; the X eyes do the telling |
+| **Mode A aim arrow too thin to read** | **FIXED** | longer and bolder |
+| **Zone transition drawn as a solid yellow slab** | **FIXED** | now seven alternating diagonal hazard stripes |
+| Zone 2 skyline towers | **UNCHANGED** | still barely visible. Stage 3 scope, logged as a gap |
+| Zone 3 crane and rain | **UNCHANGED** | low contrast against the storm sky. Stage 3 scope, logged |
+| Chunky display font | **UNCHANGED** | not started; Stage 2 |
+
+---
+
+## 4c. WebGL and the two Shift keys, confirmed in a real browser
+
+Your brief asks for the two Shift keys to be told apart via the Input System **and confirmed in
+WebGL in Chrome and Edge**. No editor test can answer that: in a browser the Input System reads
+`KeyboardEvent.code`, which is a different code path, and the WebGL player also has to actually
+ship the built-in font — if that were stripped, every piece of text would render blank while every
+editor test still passed.
+
+So the real build was driven in a real browser. Evidence sheet: `webgl_edge.png`.
+
+| What | Result |
+|---|---|
+| The build loads and runs in Edge | **YES** — canvas 960x600, title screen rendered |
+| Text renders (the font survived the build) | **YES** — logo, tagline, mode line, PRESS SHIFT TO START and the Sticky Keys tip are all legible |
+| **LEFT SHIFT throws to the LEFT robot** | **YES** — shot 03, score 2, bomb visibly at the left robot |
+| **RIGHT SHIFT throws to the RIGHT robot** | **YES** — shot 04, score 3, bomb visibly at the right robot |
+| A held Shift is ONE throw, not a stream | **YES** — held 1.6 s, score moved 3 to 4 exactly once |
+| The full loop and the game-over card work | **YES** — shot 06: BOOM!, the reason line, score, passes, NEW PERSONAL BEST |
+| **Chrome** | **NOT TESTED — Chrome is not installed on this machine.** Edge is Chromium and shares the Blink keyboard path the Input System reads, so I expect it to behave identically, but that is inference and I am not recording it as a pass |
+
+### How it was driven, and why that matters
+
+The first attempt launched a visible browser and sent real `VK_LSHIFT` presses through
+`keybd_event`, reusing Spider's `store_shots.py` pattern. **Its safety guard refused to fire**,
+because the foreground window was not the browser — Edge had put a sync dialog and an extension
+page in front of the game. Without that guard it would have typed Shift into a *Windows Security*
+dialog. The guard is the part of Spider's harness most worth having copied.
+
+The check was then rewritten to drive the page over the DevTools Protocol instead
+(`Tools/webgl_cdp_check.js`): headless, a throwaway profile, no foreground needed, and the key
+event is delivered to the page so it is impossible to type into another application. It sends
+genuine `ShiftLeft` (location 1) and `ShiftRight` (location 2) events, which is precisely the
+signal under test.
+
+### One cosmetic note for itch.io
+
+The build uses Unity's default WebGL template, so the page carries a Unity footer bar under the
+canvas. It works, but a cleaner embed would drop it. Stage 4.
 
 ---
 

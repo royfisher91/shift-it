@@ -344,6 +344,28 @@ namespace KT.ShiftIt.PlayTests
             Shoot("ui_after_resume", "...and SHIFT puts the player straight back into the run.");
         }
 
+        [UnityTest]
+        public IEnumerator Capture_SettingsScreen()
+        {
+            Capture.Session = "sheet_ui";
+            var root = Boot(Plain(), ControlMode.LeftRight, 31337);
+            yield return Frames(4);
+            root.Hud.SettingsButton.onClick.Invoke();
+            yield return Frames(6);
+            Assert.IsTrue(root.Settings.Shown, "settings did not open");
+            Shoot("ui_settings",
+                  "SETTINGS - music and sound on ten steps with minus and plus, and a fullscreen " +
+                  "toggle. Mouse-driven, which the brief allows for menus.");
+
+            for (int i = 0; i < 4; i++) root.Settings.MusicDown.onClick.Invoke();
+            root.Settings.FullscreenToggle.onClick.Invoke();
+            yield return Frames(4);
+            Shoot("ui_settings_changed",
+                  "...music turned down to 2 and fullscreen switched on. Both are remembered.");
+            root.Settings.CloseButton.onClick.Invoke();
+            yield return Frames(2);
+        }
+
         // =====================================================================
         //  GIF frame sequences, one per mode
         // =====================================================================

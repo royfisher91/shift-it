@@ -162,6 +162,98 @@ namespace KT.ShiftIt.PlayTests
         }
 
         // =====================================================================
+        //  Settings
+        // =====================================================================
+
+        [UnityTest]
+        public IEnumerator Settings_OpensFromTheTitleAndShowsTheLiveValues()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.IsFalse(root.Settings.Shown, "settings should start closed");
+
+            root.Hud.SettingsButton.onClick.Invoke();
+            yield return Frames(2);
+            Assert.IsTrue(root.Settings.Shown, "the SETTINGS button must open it");
+            Assert.AreEqual(root.MusicLevel.ToString(), root.Settings.MusicValueText);
+            Assert.AreEqual(root.SfxLevel.ToString(), root.Settings.SfxValueText);
+            Assert.AreEqual(root.FullscreenWanted ? "ON" : "OFF", root.Settings.FullscreenValueText);
+
+            root.Settings.CloseButton.onClick.Invoke();
+            yield return Frames(2);
+            Assert.IsFalse(root.Settings.Shown, "BACK must close it");
+        }
+
+        [UnityTest]
+        public IEnumerator Settings_VolumesClampAndReachTheAudioService()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            root.Hud.SettingsButton.onClick.Invoke();
+            yield return Frames(2);
+
+            // All the way down, past the end.
+            for (int i = 0; i < SettingsView.Steps + 4; i++) root.Settings.MusicDown.onClick.Invoke();
+            yield return Frames(2);
+            Assert.AreEqual(0, root.MusicLevel, "music must clamp at 0");
+            Assert.AreEqual("0", root.Settings.MusicValueText);
+            Assert.AreEqual(0f, root.Audio.MusicVolume, 0.001f, "0 must actually silence the music");
+
+            // And all the way up, past the end.
+            for (int i = 0; i < SettingsView.Steps + 4; i++) root.Settings.MusicUp.onClick.Invoke();
+            yield return Frames(2);
+            Assert.AreEqual(SettingsView.Steps, root.MusicLevel, "music must clamp at the top");
+            Assert.Greater(root.Audio.MusicVolume, 0f);
+
+            for (int i = 0; i < SettingsView.Steps + 4; i++) root.Settings.SfxDown.onClick.Invoke();
+            yield return Frames(2);
+            Assert.AreEqual(0, root.SfxLevel, "sound must clamp at 0");
+            Assert.AreEqual(0f, root.Audio.SfxVolume, 0.001f);
+        }
+
+        [UnityTest]
+        public IEnumerator Settings_RememberSettingsAcrossABoot()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            root.Hud.SettingsButton.onClick.Invoke();
+            for (int i = 0; i < 3; i++) root.Settings.MusicDown.onClick.Invoke();
+            root.Settings.FullscreenToggle.onClick.Invoke();
+            int music = root.MusicLevel;
+            bool full = root.FullscreenWanted;
+            root.Settings.CloseButton.onClick.Invoke();
+            yield return Frames(2);
+
+            Object.DestroyImmediate(root.gameObject);
+            _root = null;
+            var again = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            Assert.AreEqual(music, again.MusicLevel, "the music level must survive a restart");
+            Assert.AreEqual(full, again.FullscreenWanted, "the fullscreen choice must survive too");
+        }
+
+        [UnityTest]
+        public IEnumerator Settings_SwallowsShiftSoNoRunStartsBehindIt()
+        {
+            var root = Boot(Plain(), ControlMode.LeftRight);
+            yield return Frames(3);
+            root.Hud.SettingsButton.onClick.Invoke();
+            yield return Frames(2);
+
+            yield return Tap(_kb.leftShiftKey);
+            yield return Frames(2);
+            Assert.AreEqual(Phase.Title, root.Sim.Phase,
+                "Shift must not start a run while the settings panel is open");
+
+            // Escape closes it, and then Shift works again.
+            yield return Tap(_kb.escapeKey);
+            yield return Frames(2);
+            Assert.IsFalse(root.Settings.Shown);
+            yield return Tap(_kb.leftShiftKey);
+            Assert.AreEqual(Phase.PlayerHolding, root.Sim.Phase);
+        }
+
+        // =====================================================================
         //  The Sticky Keys tip for browser players
         // =====================================================================
 
@@ -406,8 +498,20 @@ namespace KT.ShiftIt.PlayTests
             Assert.AreNotEqual(a0, root.Sim.AimDeg, "the aim arrow must sweep while held");
             Assert.IsNotNull(Capture.Shot(root.Cam, "10_modeA_aiming"));
 
-            // Release while the arrow is actually over a robot.
-            yield return Until(() => root.Sim.SlotForAim(root.Sim.AimDeg) >= 0, 3f, "the arrow to reach a robot");
+            // Release while the arrow is WELL INSIDE a robot, not merely touching its edge.
+            //
+            // Slots are 24 degrees wide with only 4 degree gaps, and the arrow sweeps about 2.3
+            // degrees per frame - more on a heavy frame. Waiting for "over a robot" could observe
+            // the arrow on an outer edge and then have it drift into the gap during the frame
+            // before the release was read, which made this test fail on frame luck rather than on
+            // the mechanic. Requiring the arrow near a slot CENTRE leaves room for that one frame
+            // of drift. The drift itself is honest: a real player's release is also judged on the
+            // following tick.
+            yield return Until(() =>
+            {
+                int s = root.Sim.SlotForAim(root.Sim.AimDeg);
+                return s >= 0 && Mathf.Abs(root.Sim.AimDeg - root.Sim.SlotCentreDeg(s)) <= 6f;
+            }, 3f, "the arrow to reach the middle of a robot");
             Release(_kb.leftShiftKey);
             yield return null;
             Assert.AreNotEqual(FailReason.ReleasedBetween, root.Sim.Fail,

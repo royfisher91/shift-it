@@ -24,19 +24,19 @@ namespace KT.ShiftIt.Game
         ShiftSim _sim;
         RobotView _player;
         RobotView[] _receivers = new RobotView[0];
-        Label[] _keyLabels = new Label[0];
+        BlockText[] _keyLabels = new BlockText[0];
 
         SpriteRenderer _bomb, _bombHighlight, _bombOutline;
         /// <summary>Holds only the bomb's own art, so the shiver cannot squash the fuse ring.</summary>
         Transform _bombArt;
         Transform _bombRoot;
-        Label _bombTag;
+        BlockText _bombTag;
         FuseRingView _ring;
 
         Transform _aim;
         SpriteRenderer _aimShaft, _aimHead;
 
-        Label _mirrorTag;
+        BlockText _mirrorTag;
         Transform _world;
 
         ControlMode _builtMode = (ControlMode)(-1);
@@ -84,7 +84,7 @@ namespace KT.ShiftIt.Game
             _bombHighlight = AddSprite(_bombArt, "Shine", Shapes.Circle(28),
                                        new Color(1f, 1f, 1f, 0.33f), 12, 1f);
             _bombHighlight.transform.localPosition = new Vector3(-0.16f, 0.17f, 0f);
-            _bombTag = Label.CreateWorld(bombGo.transform, "Tag", new Vector3(0, 0.02f, 0f), 40, Color.white);
+            _bombTag = BlockText.CreateWorld(bombGo.transform, "Tag", new Vector3(0, 0.02f, 0f), 34, Color.white);
             _bombTag.SetText("");
 
             _ring = FuseRingView.Create(bombGo.transform, 2.05f);
@@ -102,7 +102,7 @@ namespace KT.ShiftIt.Game
             _aimHead.transform.localPosition = new Vector3(0f, 5.0f, 0f);
             aimGo.SetActive(false);
 
-            _mirrorTag = Label.CreateWorld(_world, "MirrorTag", new Vector3(0f, PlayerY + 2.5f, 0f), 46,
+            _mirrorTag = BlockText.CreateWorld(_world, "MirrorTag", new Vector3(0f, PlayerY + 2.5f, 0f), 44,
                                            new Color(1f, 0.45f, 0.85f));
             _mirrorTag.SetText("");
         }
@@ -134,7 +134,7 @@ namespace KT.ShiftIt.Game
 
             int n = _sim.SlotCount;
             _receivers = new RobotView[n];
-            _keyLabels = new Label[n];
+            _keyLabels = new BlockText[n];
 
             for (int i = 0; i < n; i++)
             {
@@ -145,8 +145,8 @@ namespace KT.ShiftIt.Game
                 // The brief: ALWAYS show the L-SHIFT / R-SHIFT labels under the two robots in Mode B.
                 if (_sim.Mode == ControlMode.LeftRight)
                 {
-                    _keyLabels[i] = Label.CreateWorld(_world, "Key" + i,
-                                                      p + new Vector3(0f, -1.5f, 0f), 92, Color.white);
+                    _keyLabels[i] = BlockText.CreateWorld(_world, "Key" + i,
+                                                          p + new Vector3(0f, -1.5f, 0f), 88, Color.white);
                 }
             }
             _aim.gameObject.SetActive(_sim.Mode == ControlMode.HoldRelease);
@@ -329,16 +329,16 @@ namespace KT.ShiftIt.Game
 
         /// <summary>The L-SHIFT / R-SHIFT label under receiver i, as the player reads it.</summary>
         public string KeyLabelText(int i)
-            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Raw.text : "";
+            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Text : "";
         public Color KeyLabelColour(int i)
-            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Raw.color : Color.white;
-        public string MirrorTagText => _mirrorTag != null && _mirrorTag.Raw.color.a > 0.05f ? _mirrorTag.Raw.text : "";
+            => i >= 0 && i < _keyLabels.Length && _keyLabels[i] != null ? _keyLabels[i].Colour : Color.white;
+        public string MirrorTagText => _mirrorTag != null && _mirrorTag.Colour.a > 0.05f ? _mirrorTag.Text : "";
         public bool AimArrowShown => _aimHead != null && _aimHead.enabled;
         public Color AimArrowColour => _aimHead != null ? _aimHead.color : Color.white;
         public FuseRingView Ring => _ring;
         public bool BombVisible => _bomb != null && _bomb.enabled;
         public Color BombColour => _bomb != null ? _bomb.color : Color.white;
-        public string BombTagText => _bombTag != null ? _bombTag.Raw.text : "";
+        public string BombTagText => _bombTag != null ? _bombTag.Text : "";
 
         public void PopPlayer() => _player.Pop();
 

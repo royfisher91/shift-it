@@ -63,6 +63,13 @@ namespace KT.ShiftIt.Sim
         bool _warnedHoldThisPress;
         float _gameOverLock;
 
+        /// <summary>
+        /// True while the short post-explosion lockout is still running, so a Shift press that was
+        /// part of the death cannot instantly restart the run. Exposed read-only because the
+        /// browser harness needs to know when a retry press will actually be accepted.
+        /// </summary>
+        public bool RetryLocked => _gameOverLock > 0f;
+
         readonly bool[] _hintShown = new bool[(int)Hint.Count];
 
         public ShiftSim(SimConfig cfg, int seed, ControlMode mode)

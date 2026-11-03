@@ -18,6 +18,9 @@ namespace KT.ShiftIt.Game
         const string PrefHints = "shiftit.hints";
         const string PrefMode = "shiftit.mode";
         const string PrefTipDismissed = "shiftit.tip.stickykeys";
+        const string PrefMusic = "shiftit.vol.music";
+        const string PrefSfx = "shiftit.vol.sfx";
+        const string PrefFullscreen = "shiftit.fullscreen";
 
         /// <summary>
         /// MODE A (hold and release) is built, tested and measured, but it does not ship: Roy chose
@@ -52,6 +55,7 @@ namespace KT.ShiftIt.Game
         public Juice Juice { get; private set; }
         public AudioService Audio { get; private set; }
         public ZoneBackdrop Zones { get; private set; }
+        public SettingsView Settings { get; private set; }
         public Camera Cam { get; private set; }
 
         float _tickAccum;
@@ -59,6 +63,9 @@ namespace KT.ShiftIt.Game
         bool _quitConfirm;
         float _quitLock;
         bool _prevShift;
+        int _musicLevel = 6;
+        int _sfxLevel = 8;
+        bool _fullscreen;
 
         /// <summary>
         /// A browser tab cannot be closed by the page, and Escape there is the browser's own
@@ -100,12 +107,21 @@ namespace KT.ShiftIt.Game
             Juice = Juice.Create(transform, Cam.transform);
             Hud = HudView.Create(transform, Cam);
             Audio = AudioService.Create(transform, StartMuted || TestMode);
+            Settings = SettingsView.Create(Hud.Canvas.transform);
 
             // 6. wiring that needs everything to exist
             Hud.ModeButton.onClick.AddListener(ToggleMode);
             Hud.QuitYesButton.onClick.AddListener(QuitNow);
             Hud.QuitNoButton.onClick.AddListener(() => SetQuitConfirm(false));
             Hud.TipDismissButton.onClick.AddListener(DismissStickyTip);
+            Hud.SettingsButton.onClick.AddListener(() => ShowSettings(true));
+            Settings.CloseButton.onClick.AddListener(() => ShowSettings(false));
+            Settings.MusicDown.onClick.AddListener(() => NudgeVolume(music: true, delta: -1));
+            Settings.MusicUp.onClick.AddListener(() => NudgeVolume(music: true, delta: +1));
+            Settings.SfxDown.onClick.AddListener(() => NudgeVolume(music: false, delta: -1));
+            Settings.SfxUp.onClick.AddListener(() => NudgeVolume(music: false, delta: +1));
+            Settings.FullscreenToggle.onClick.AddListener(ToggleFullscreen);
+            LoadSettings();
             Hud.SetStickyTip(StickyKeysTip, ShouldShowStickyTip());
 
             Sim.GoToTitle();
@@ -281,11 +297,26 @@ namespace KT.ShiftIt.Game
                 return;                       // the simulation does not tick while this is open
             }
 
+            if (Settings.Shown)
+            {
+                // Mouse-only while it is open: Shift must not start a run behind the panel.
+                if (Input.QuitPressed) ShowSettings(false);
+                Zones.Tick(0f);
+                Board.Tick(0f);
+                Juice.Tick(udt);
+                Hud.Tick(Sim, 0f, udt);
+                Audio.Tick(udt);
+                return;
+            }
+
             if (Input.QuitPressed && QuitAvailable && Sim.Phase != Phase.Failing)
             {
                 SetQuitConfirm(true);
                 return;
             }
+
+            // Tab is free now that there is no mode to toggle, so it opens settings at the title.
+            if (Input.ToggleModePressed && Sim.Phase == Phase.Title) { ShowSettings(true); return; }
 
             if (_focused) Input.Apply(Sim);
 
@@ -303,6 +334,7 @@ namespace KT.ShiftIt.Game
             Juice.Tick(udt);
             Hud.Tick(Sim, dt, udt);
             Audio.Tick(udt);
+            WebBridge.Report(Sim, Sim.RetryLocked);
 
             TickFuseFeedback(dt);
         }
@@ -401,6 +433,7 @@ namespace KT.ShiftIt.Game
                         PlayerPrefs.SetInt(BestKey(Sim.Mode), Sim.Best);
                         SaveShownHints();
                         PlayerPrefs.Save();
+                        WebBridge.ReportRunEnd(Sim);
                         break;
 
                     case SimEventKind.Started:
@@ -437,6 +470,70 @@ namespace KT.ShiftIt.Game
             Hud.Flash(1f);
             Board.KillAll();
         }
+
+        // =====================================================================
+        //  Settings: music volume, sound volume, fullscreen
+        // =====================================================================
+
+        void LoadSettings()
+        {
+            _musicLevel = Mathf.Clamp(PlayerPrefs.GetInt(PrefMusic, 6), 0, SettingsView.Steps);
+            _sfxLevel = Mathf.Clamp(PlayerPrefs.GetInt(PrefSfx, 8), 0, SettingsView.Steps);
+            _fullscreen = PlayerPrefs.GetInt(PrefFullscreen, 0) == 1;
+            ApplySettings(applyFullscreen: false);   // never yank the window about at boot
+        }
+
+        /// <summary>
+        /// Push the levels into the audio service and repaint the panel. Fullscreen is only
+        /// touched when the player actually asks, because changing it needs a user gesture in a
+        /// browser and would be rude at startup.
+        /// </summary>
+        void ApplySettings(bool applyFullscreen)
+        {
+            Audio.MusicVolume = 0.75f * (_musicLevel / (float)SettingsView.Steps);
+            Audio.SfxVolume = _sfxLevel / (float)SettingsView.Steps;
+            if (applyFullscreen) Screen.fullScreen = _fullscreen;
+            Settings.Refresh(_musicLevel, _sfxLevel, _fullscreen);
+        }
+
+        void SaveSettings()
+        {
+            PlayerPrefs.SetInt(PrefMusic, _musicLevel);
+            PlayerPrefs.SetInt(PrefSfx, _sfxLevel);
+            PlayerPrefs.SetInt(PrefFullscreen, _fullscreen ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+
+        public void ShowSettings(bool on)
+        {
+            Settings.Show(on);
+            Hud.SuppressTitle = on;        // the dialog replaces the title, it does not sit on it
+            if (on) ApplySettings(applyFullscreen: false);
+            else SaveSettings();
+            Audio.Play(Sfx.UiPress);
+        }
+
+        public void NudgeVolume(bool music, int delta)
+        {
+            if (music) _musicLevel = Mathf.Clamp(_musicLevel + delta, 0, SettingsView.Steps);
+            else _sfxLevel = Mathf.Clamp(_sfxLevel + delta, 0, SettingsView.Steps);
+            ApplySettings(applyFullscreen: false);
+            SaveSettings();
+            // The sound effect IS the preview: nudging SOUND should be audible at the new level.
+            Audio.Play(music ? Sfx.UiHover : Sfx.Perfect);
+        }
+
+        public void ToggleFullscreen()
+        {
+            _fullscreen = !_fullscreen;
+            ApplySettings(applyFullscreen: true);
+            SaveSettings();
+            Audio.Play(Sfx.UiPress);
+        }
+
+        public int MusicLevel => _musicLevel;
+        public int SfxLevel => _sfxLevel;
+        public bool FullscreenWanted => _fullscreen;
 
         public void SetQuitConfirm(bool on)
         {
@@ -499,6 +596,9 @@ namespace KT.ShiftIt.Game
             PlayerPrefs.DeleteKey(PrefHints);
             PlayerPrefs.DeleteKey(PrefMode);
             PlayerPrefs.DeleteKey(PrefTipDismissed);
+            PlayerPrefs.DeleteKey(PrefMusic);
+            PlayerPrefs.DeleteKey(PrefSfx);
+            PlayerPrefs.DeleteKey(PrefFullscreen);
             PlayerPrefs.Save();
         }
     }

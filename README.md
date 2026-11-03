@@ -2,6 +2,8 @@
 
 **Pass the bomb. Don't be holding it.**
 
+**Play it:** https://kadence-tech-games.itch.io/shift-it
+
 A one-key arcade game for [GitHub Game Off 2026](https://itch.io/jam/game-off-2026).
 Theme: **SHIFT**.
 

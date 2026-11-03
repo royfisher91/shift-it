@@ -24,7 +24,7 @@ namespace KT.ShiftIt.Game
         SpriteRenderer _shieldArc, _emptyPad;
         Transform _zzz;
         SpriteRenderer _sweat;
-        Label _sign;
+        BlockText _sign;
 
         Color _bodyColour;
         float _bobPhase;
@@ -105,7 +105,7 @@ namespace KT.ShiftIt.Game
                 m.transform.localRotation = Quaternion.Euler(0, 0, -18f);
             }
 
-            _sign = Label.CreateWorld(transform, "Sign", new Vector3(0, 1.28f, 0f), 44, Color.white);
+            _sign = BlockText.CreateWorld(transform, "Sign", new Vector3(0, 1.28f, 0f), 34, Color.white);
             _sign.SetText("");
         }
 
@@ -372,7 +372,7 @@ namespace KT.ShiftIt.Game
         public float EyeScaleY => _eyeL != null ? _eyeL.transform.localScale.y : 1f;
         /// <summary>Eye colour. The NOPE / dead faces turn the eyes red or grey.</summary>
         public Color EyeColour => _eyeL != null ? _eyeL.color : Color.white;
-        public string SignText => _sign != null && _sign.Raw != null ? _sign.Raw.text : "";
+        public string SignText => _sign != null ? _sign.Text : "";
 
         public void SetHome(Vector3 p) { _home = p; transform.localPosition = p; }
         public Vector3 Home => _home;

@@ -25,7 +25,7 @@ namespace KT.ShiftIt.Game
         public static int CachedCount => _cache.Count;
 
         static Sprite Build(string key, int w, int h, System.Func<float, float, bool> inside,
-                            Vector2? pivot = null)
+                            Vector2? pivot = null, float ppu = PPU)
         {
             if (_cache.TryGetValue(key, out var cached) && cached != null) return cached;
 
@@ -57,14 +57,24 @@ namespace KT.ShiftIt.Game
             tex.Apply(false, false);
 
             var p = pivot ?? new Vector2(0.5f, 0.5f);
-            var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), p, PPU, 0, SpriteMeshType.FullRect);
+            var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), p, ppu, 0, SpriteMeshType.FullRect);
             sprite.name = key;
             _cache[key] = sprite;
             return sprite;
         }
 
-        /// <summary>A plain 4x4 white block. Scale it for any solid rectangle.</summary>
-        public static Sprite Block() => Build("block", 4, 4, (x, y) => true);
+        /// <summary>
+        /// A plain white square measuring exactly ONE WORLD UNIT, so a localScale of (60, 5) means
+        /// 60 by 5 units and nothing else has to think about it.
+        ///
+        /// This used to be built at the shared 100 pixels-per-unit, which made the 4x4 texture
+        /// 0.04 units across - so every world object built from it came out TWENTY-FIVE TIMES
+        /// smaller than its scale said. That one line is why the skyline was a row of specks, the
+        /// scrapyard crane and the rain were invisible, the launchpad gantry never appeared and the
+        /// hazard stripes along the floor could not be seen. UI Images are unaffected: they size
+        /// themselves from their RectTransform and ignore pixels-per-unit entirely.
+        /// </summary>
+        public static Sprite Block() => Build("block1u", 4, 4, (x, y) => true, null, 4f);
 
         /// <summary>Filled circle, diameter in pixels.</summary>
         public static Sprite Circle(int d)

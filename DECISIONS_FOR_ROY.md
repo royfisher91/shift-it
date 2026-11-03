@@ -378,3 +378,80 @@ feature would have shipped with no test behind it: the platform check is false i
 every assertion about the tip would have passed vacuously against a tip that was never shown. That
 is the "a check that could not run must never count as a pass" rule applied before the fact rather
 than after.
+
+---
+
+## Stage 3 — zones, display font, settings (3 Nov 2026)
+
+**D-042 — The faint backdrops were ONE bug, not four, and it is fixed.**
+`Shapes.Block()` built its 4×4 white texture at the shared 100 pixels-per-unit, which made the
+sprite **0.04 world units** across. Every world object scaled from it therefore came out
+**twenty-five times smaller than its scale said**. That single line is why the zone 2 skyline was a
+row of specks, the zone 3 crane and rain never appeared, the zone 4 launchpad gantry was missing and
+the hazard stripes along the floor could not be seen — four separate "the art is too faint" symptoms
+with one cause. `Block()` is now built at 4 px/unit, so it measures exactly one world unit and a
+`localScale` of `(60, 5)` means 60 by 5 units. No scale values were changed to compensate; they were
+right all along. UI `Image`s are unaffected because they size from their `RectTransform` and ignore
+pixels-per-unit. **To change:** `Shapes.cs`, the `ppu` argument on `Block()`.
+
+**D-043 — The display font is generated in code, like every other sprite.**
+`BlockFont.cs` holds a 5×7 cell grid per character and draws each lit cell as a rounded square with
+a gap, so the face reads as big soft pixels next to the rounded-rectangle robots. It covers A–Z, 0–9
+and the punctuation the game actually uses. This keeps the project's rule that nothing is imported:
+there is no font licence to account for and nothing extra to ship. **To change:** edit the glyph
+rows in `BlockFont.cs`; the cell shape is the `inset`/`radius` pair in `Glyph()`.
+
+**D-044 — The block face is for DISPLAY text only; prose keeps the readable font.**
+Score, combo, BEST, zone name, pass count, the logo, PRESS SHIFT, BOOM!, the floating score pops,
+the L-SHIFT/R-SHIFT labels, the bomb tags and the blocker signs are all on the block face. The
+tagline, the game-over reason line, the Sticky Keys tip and the mode help are not. A 5×7 pixel face
+is right for a score and wrong for a sentence. **To change:** swap `BlockText.Create` for
+`Label.Create` at the call site, or the reverse — the two expose the same small surface deliberately.
+
+**D-045 — Glyphs are spaced a full cell apart, and carry a drop shadow by default.**
+The first cut used 0.18 of a cell between glyphs and the letters ran into each other — "ROOFTOP"
+came out a smear. It is now one full cell, which is what `BlockFont.AdvanceCols` already declared.
+White display text also sits on sunset skylines and floodlit launchpads, so every `BlockText` draws
+a dark offset copy behind itself unless told not to. **To change:** `SetTracking()` and
+`SetShadow()` on `BlockText`.
+
+**D-046 — The settings screen is mouse-driven and opens from the title only.**
+The brief's rule is that the Shift keys run the **game** and that menus may also take the mouse, so
+real buttons break nothing — and a volume control in a two-key game has no other sensible shape.
+Music and sound are ten steps driven by minus and plus buttons rather than a drag slider: the steps
+suit the chunky art, they are easier to hit, and they behave identically on a touchscreen. It opens
+from the SETTINGS button or Tab, and Escape closes it. Shift is swallowed while it is open so no run
+starts behind the panel. **Limitation, stated rather than hidden:** you cannot change the volume
+mid-run, only from the title. Adding it to the Escape pause screen is a small change if you want it.
+**To change:** `SettingsView.cs` and the `ShowSettings` wiring in `GameRoot.cs`.
+
+**D-047 — Fullscreen is never applied at boot, only when the player asks.**
+The choice is remembered, but it is not re-applied on startup: browsers require a user gesture to go
+fullscreen, and yanking the window about as the game loads would be rude even where it is allowed.
+So a player who turned it on last time sees the toggle reading ON and presses it once.
+**To change:** the `applyFullscreen` argument in `GameRoot.LoadSettings()`.
+
+**D-048 — The browser play session reads real game state through a write-only bridge.**
+`WebBridge.cs` plus `Assets/Plugins/WebGL/ShiftItBridge.jslib` publish one compact state line per
+frame to the hosting page. `Tools/webgl_play_session.js` reads it and plays the actual WebGL build
+the way a player does — holding for the green band, refusing to throw duds, never throwing at a
+shielded or sleeping robot, waiting when both sides are blocked, and respecting mirrored turns.
+This follows the lesson that cost this project a day in Stage 1: a bot that cannot see the game
+produces confident, worthless numbers. A driver mashing Shift on a timer would die at three passes
+and its "ten full runs" would describe the harness, not the game. The bridge only ever **writes** a
+string to the page, and input still arrives as genuine browser key events, so the real input path is
+what gets tested. Outside WebGL every method compiles to nothing. **To change:** delete the
+`WebBridge.Report` call in `GameRoot.cs`; nothing else depends on it.
+
+**D-049 — One Mode A test was fixed for a race it always had.**
+`ModeA_HoldSweepsTheArrowAndReleaseThrows` waited for the aim arrow to be over a robot and then
+released. Slots are 24° wide with only 4° gaps and the arrow sweeps about 2.3° per frame, so the
+test could observe the arrow on an outer edge and have it drift into the gap during the frame before
+the release was read. Heavier frames (the font now generates glyph textures at boot) made that bite.
+The test now waits for the arrow to reach the **middle** of a robot. This is a test fix, not a game
+change: the one frame of slop is honest, because a real player's release is also judged on the
+following tick. **To change:** the tolerance in `PlayTests.cs`.
+
+**D-050 — The itch page address is recorded in the repo.**
+`https://kadence-tech-games.itch.io/shift-it` is now in `README.md` and at the top of
+`Docs/ITCH_PAGE.md`, so the link lives in one place rather than being retyped.

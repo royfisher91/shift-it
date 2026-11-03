@@ -218,7 +218,7 @@ namespace KT.ShiftIt.Game
                     for (int wy = 0; wy < rows; wy++)
                     for (int wx = 0; wx < 2; wx++)
                     {
-                        if (Rand() > 0.45f) continue;
+                        if (Rand() > 0.62f) continue;
                         Add(r, "Win", Shapes.Block(), new Color(1f, 0.85f, 0.45f, Range(0.4f, 0.95f)),
                             -88 + layer,
                             new Vector3(x + (wx - 0.5f) * w * 0.45f, baseY + 0.25f + wy * 0.42f, 0f),
@@ -279,14 +279,24 @@ namespace KT.ShiftIt.Game
                              new Vector3(0f, 0.6f, 0f), new Vector3(60f, 24f, 1f));
 
             // Rusty crane.
-            Add(r, "CraneMast", Shapes.Block(), new Color(0.44f, 0.26f, 0.16f), -85,
+            var rust = new Color(0.56f, 0.33f, 0.19f);
+            var rustDark = new Color(0.40f, 0.23f, 0.13f);
+            Add(r, "CraneMast", Shapes.Block(), rust, -85,
                 new Vector3(7.4f, 0.4f, 0f), new Vector3(0.42f, 8f, 1f));
-            Add(r, "CraneJib", Shapes.Block(), new Color(0.44f, 0.26f, 0.16f), -85,
-                new Vector3(4.6f, 3.9f, 0f), new Vector3(6.6f, 0.3f, 1f));
-            Add(r, "CraneCable", Shapes.Block(), new Color(0.2f, 0.18f, 0.16f), -84,
-                new Vector3(2.2f, 2.9f, 0f), new Vector3(0.06f, 2f, 1f));
-            Add(r, "CraneHook", Shapes.RoundedRect(60, 60, 10), new Color(0.35f, 0.33f, 0.3f), -84,
-                new Vector3(2.2f, 1.8f, 0f), new Vector3(0.5f, 0.5f, 1f));
+            // Lattice rungs up the mast, so it reads as a crane rather than a post.
+            for (int k = 0; k < 9; k++)
+                Add(r, "CraneRung", Shapes.Block(), rustDark, -84,
+                    new Vector3(7.4f, -3.3f + k * 0.9f, 0f), new Vector3(0.62f, 0.09f, 1f));
+            Add(r, "CraneJib", Shapes.Block(), rust, -85,
+                new Vector3(4.6f, 3.9f, 0f), new Vector3(6.6f, 0.34f, 1f));
+            Add(r, "CraneTie", Shapes.Block(), rustDark, -85,
+                new Vector3(6.0f, 3.25f, 0f), new Vector3(3.4f, 0.1f, 1f), 20f);
+            Add(r, "CraneWeight", Shapes.RoundedRect(90, 110, 10), rustDark, -85,
+                new Vector3(8.3f, 3.5f, 0f), new Vector3(0.9f, 1.1f, 1f));
+            Add(r, "CraneCable", Shapes.Block(), new Color(0.16f, 0.15f, 0.14f), -84,
+                new Vector3(2.2f, 2.85f, 0f), new Vector3(0.09f, 2.1f, 1f));
+            Add(r, "CraneHook", Shapes.RoundedRect(60, 60, 10), new Color(0.42f, 0.40f, 0.37f), -84,
+                new Vector3(2.2f, 1.7f, 0f), new Vector3(0.5f, 0.5f, 1f));
 
             // Scrap piles with tyres.
             for (int i = 0; i < 5; i++)
@@ -308,7 +318,7 @@ namespace KT.ShiftIt.Game
                     new Vector3(Range(0.7f, 1.6f), 1f, 1f));
 
             // Rain: a few columns of streaks, recycled as they fall.
-            for (int i = 0; i < 46; i++)
+            for (int i = 0; i < 95; i++)
             {
                 var d = Add(r, "Rain", Shapes.Block(), new Color(0.80f, 0.87f, 0.95f, 0.55f), -50,
                             new Vector3(Range(-12f, 12f), Range(-4f, 6f), 0f),

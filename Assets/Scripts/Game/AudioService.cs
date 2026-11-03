@@ -40,6 +40,8 @@ namespace KT.ShiftIt.Game
         int _currentZone = -1;
         float _fade = 1f;
         public float MusicVolume = 0.55f;
+        /// <summary>Master multiplier for every one-shot. Driven by the settings screen.</summary>
+        public float SfxVolume = 1f;
         System.Random _cosmeticRng;      // never the gameplay stream (quality lesson D9)
         bool _muted;
 
@@ -186,7 +188,7 @@ namespace KT.ShiftIt.Game
             // Pattern 10 item 6: vary, do not repeat.
             float jitter = (float)(_cosmeticRng.NextDouble() - 0.5) * 0.06f;
             src.pitch = Mathf.Clamp(pitch + jitter, 0.25f, 3f);
-            src.volume = Mathf.Clamp01(volume);
+            src.volume = Mathf.Clamp01(volume) * Mathf.Clamp01(SfxVolume);
             src.Play();
         }
 

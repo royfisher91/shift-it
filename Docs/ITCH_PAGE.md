@@ -1,5 +1,7 @@
 # itch.io page copy — SHIFT IT!
 
+**Page: https://kadence-tech-games.itch.io/shift-it** (draft)
+
 Draft copy for the store page. Screenshots, cover art and the GIF are produced by the capture
 harness and live outside the repository at `D:\KT\ShiftIt\Review\sheets`.
 
@@ -70,9 +72,11 @@ A typical run lasts about a minute.
 | **RIGHT SHIFT** | throw right |
 | **SHIFT** | start, and retry |
 | **ESC** | quit (desktop build) |
+| **TAB** | settings (music, sound, fullscreen) |
 | **Touch** | tap the left or right half of the screen |
 
-No mouse, no arrows, no WASD, no Space. Menus take the mouse.
+No mouse, no arrows, no WASD, no Space **in the game**. The settings screen takes the mouse — it is
+the only sensible shape for a volume slider in a two-key game.
 
 ---
 
@@ -94,8 +98,9 @@ for the eight seconds that would trigger Filter Keys either — the fuse runs ou
 
 ## Credits and licence
 
-All art is generated in code — there is not one imported image in the project. The sound effects are
-synthesised in code too. The music and the explosion are CC0 from
+All art is generated in code — there is not one imported image in the project, and the chunky
+display typeface is drawn the same way, a 5x7 grid of rounded cells per character. The sound effects
+are synthesised in code too. The music and the explosion are CC0 from
 [OpenGameArt](https://opengameart.org):
 
 - *in the robot pub loop* — Sauer2
@@ -115,7 +120,16 @@ Built with Unity 6000.6.4f1 by **KT Game Development**.
 
 ## Still to do before submission
 
-- [ ] Cover image (630×500)
-- [ ] 5 screenshots
-- [ ] Animated GIF for the page
+- [x] Cover image (630×500)
+- [x] 5 screenshots
+- [x] Animated GIFs for the page (early game, late game with blockers)
 - [ ] Final WebGL upload with "click to play" disabled so Shift reaches the game immediately
+- [ ] Set the itch embed to 1280×720 and tick "fullscreen button"
+
+### Upload settings that matter for this game
+
+The game is driven entirely by the Shift keys, so **the iframe must have keyboard focus before the
+player presses anything**. On the itch page set the embed to click-to-launch rather than
+auto-start, so the player's first click gives the frame focus; the start screen then responds to
+Shift immediately. Without that first click the browser sends the key events to the page, not the
+game, and it looks broken.

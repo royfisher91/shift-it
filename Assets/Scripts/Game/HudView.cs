@@ -20,25 +20,28 @@ namespace KT.ShiftIt.Game
         RectTransform _root;
         Camera _cam;
 
-        // HUD
-        Label _score, _combo, _best, _zone, _passes;
+        // HUD - all display weight, so all on the generated block face
+        BlockText _score, _combo, _best, _zone, _passes;
         // Title
         GameObject _titlePanel;
-        Label _logo, _tagline, _modeLine, _startLine, _modeHelp;
+        BlockText _logo, _startLine;
+        Label _tagline, _modeLine, _modeHelp;        // prose: a 5x7 face is wrong for sentences
         // The Sticky Keys tip: a small strip the player can dismiss for good.
         GameObject _tipPanel;
         Label _tipText;
         public Button TipDismissButton { get; private set; }
         // Game over
         GameObject _overPanel;
-        Label _overTitle, _overReason, _overScore, _overBest, _overRetry;
+        BlockText _overTitle, _overScore, _overBest, _overRetry;
+        Label _overReason;
         // Quit confirm
         GameObject _quitPanel;
         Label _quitTitle, _quitHelp;
         public Button QuitYesButton { get; private set; }
         public Button QuitNoButton { get; private set; }
         // Transient
-        Label _hint, _banner, _centrePop;
+        BlockText _banner, _centrePop;
+        Label _hint;
         Image _wipe, _flash;
         RectTransform _wipeRt;
 
@@ -51,7 +54,7 @@ namespace KT.ShiftIt.Game
 
         sealed class ScorePop
         {
-            public Label L; public float T; public Vector2 From;
+            public BlockText L; public float T; public Vector2 From;
         }
 
         public Canvas Canvas => _canvas;
@@ -87,25 +90,25 @@ namespace KT.ShiftIt.Game
             _root = GetComponent<RectTransform>();
 
             // ---------- HUD ----------
-            _score = Label.Create(_root, "Score", 96, Color.white, TextAnchor.UpperLeft)
+            _score = BlockText.Create(_root, "Score", 96, Color.white, TextAnchor.UpperLeft)
                 .SetAnchored(new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(48f, -30f), new Vector2(560f, 110f));
-            _combo = Label.Create(_root, "Combo", 48, new Color(0.45f, 1f, 0.55f), TextAnchor.UpperLeft)
+            _combo = BlockText.Create(_root, "Combo", 48, new Color(0.45f, 1f, 0.55f), TextAnchor.UpperLeft)
                 .SetAnchored(new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(54f, -132f), new Vector2(560f, 64f));
-            _best = Label.Create(_root, "Best", 52, new Color(0.95f, 0.88f, 0.55f), TextAnchor.UpperRight)
+            _best = BlockText.Create(_root, "Best", 52, new Color(0.95f, 0.88f, 0.55f), TextAnchor.UpperRight)
                 .SetAnchored(new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-48f, -34f), new Vector2(560f, 70f));
-            _zone = Label.Create(_root, "Zone", 54, new Color(0.88f, 0.93f, 1f), TextAnchor.UpperCenter)
+            _zone = BlockText.Create(_root, "Zone", 54, new Color(0.88f, 0.93f, 1f), TextAnchor.UpperCenter)
                 .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(900f, 70f));
-            _passes = Label.Create(_root, "Passes", 36, new Color(0.72f, 0.78f, 0.9f), TextAnchor.UpperCenter)
-                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -84f), new Vector2(760f, 46f));
+            _passes = BlockText.Create(_root, "Passes", 36, new Color(0.72f, 0.78f, 0.9f), TextAnchor.UpperCenter)
+                .SetAnchored(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -98f), new Vector2(760f, 46f));
 
             // ---------- transient ----------
             // Sits high and clear: it used to overlap the PERFECT pop at y=150 and, in Mode A,
             // the topmost robot of the arc.
             _hint = Label.Create(_root, "Hint", 54, new Color(1f, 0.95f, 0.5f))
                 .SetAnchored(new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 96f), new Vector2(1600f, 84f));
-            _banner = Label.Create(_root, "Banner", 110, Color.white)
+            _banner = BlockText.Create(_root, "Banner", 110, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(1900f, 160f));
-            _centrePop = Label.Create(_root, "CentrePop", 92, new Color(0.5f, 1f, 0.6f))
+            _centrePop = BlockText.Create(_root, "CentrePop", 92, new Color(0.5f, 1f, 0.6f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1200f, 130f));
             _hint.SetAlpha(0f); _banner.SetAlpha(0f); _centrePop.SetAlpha(0f);
 
@@ -172,9 +175,8 @@ namespace KT.ShiftIt.Game
             drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one;
             drt.offsetMin = Vector2.zero; drt.offsetMax = Vector2.zero;
 
-            _logo = Label.Create(_titlePanel.transform, "Logo", 190, new Color(1f, 0.82f, 0.16f))
-                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 250f), new Vector2(1800f, 260f))
-                .SetOutline(7f);
+            _logo = BlockText.Create(_titlePanel.transform, "Logo", 190, new Color(1f, 0.82f, 0.16f))
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 250f), new Vector2(1800f, 260f));
             _logo.SetText("SHIFT IT!");
             _tagline = Label.Create(_titlePanel.transform, "Tagline", 54, new Color(0.92f, 0.94f, 1f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 110f), new Vector2(1700f, 80f));
@@ -186,10 +188,15 @@ namespace KT.ShiftIt.Game
             // With Mode A off there is nothing to switch to, so the line becomes a plain control
             // reminder instead of a toggle, and the mouse target goes with it.
             _modeHelp.SetText(GameRoot.ModeAEnabled ? "TAB or click to change mode" : "");
-            _startLine = Label.Create(_titlePanel.transform, "Start", 72, Color.white)
+            _startLine = BlockText.Create(_titlePanel.transform, "Start", 72, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1700f, 100f));
             _startLine.SetText("PRESS SHIFT TO START");
             BuildStickyTip();
+
+            // Settings is mouse-driven, which the brief allows for menus. It sits under the start
+            // prompt so it never competes with "PRESS SHIFT TO START" for attention.
+            SettingsButton = MakeButton(_titlePanel.transform, "SettingsBtn", "SETTINGS",
+                                        new Vector2(0f, -330f), new Color(0.24f, 0.30f, 0.38f));
 
             // The mode line is a real button so the title screen works with the mouse alone.
             var btn = _modeLine.gameObject.AddComponent<Button>();
@@ -200,6 +207,13 @@ namespace KT.ShiftIt.Game
         }
 
         public Button ModeButton { get; private set; }
+        public Button SettingsButton { get; private set; }
+
+        /// <summary>
+        /// Set while the settings panel is open. Tick drives the title panel from the phase every
+        /// frame, so without this it would switch straight back on behind the dialog.
+        /// </summary>
+        public bool SuppressTitle;
 
         void BuildGameOver()
         {
@@ -219,17 +233,16 @@ namespace KT.ShiftIt.Game
             drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one;
             drt.offsetMin = Vector2.zero; drt.offsetMax = Vector2.zero;
 
-            _overTitle = Label.Create(_overPanel.transform, "OverTitle", 150, new Color(1f, 0.42f, 0.32f))
-                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 250f), new Vector2(1800f, 200f))
-                .SetOutline(6f);
+            _overTitle = BlockText.Create(_overPanel.transform, "OverTitle", 150, new Color(1f, 0.42f, 0.32f))
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 250f), new Vector2(1800f, 200f));
             _overTitle.SetText("BOOM!");
             _overReason = Label.Create(_overPanel.transform, "OverReason", 56, new Color(1f, 0.92f, 0.8f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(1800f, 90f));
-            _overScore = Label.Create(_overPanel.transform, "OverScore", 80, Color.white)
+            _overScore = BlockText.Create(_overPanel.transform, "OverScore", 80, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(1800f, 110f));
-            _overBest = Label.Create(_overPanel.transform, "OverBest", 46, new Color(0.95f, 0.88f, 0.55f))
+            _overBest = BlockText.Create(_overPanel.transform, "OverBest", 46, new Color(0.95f, 0.88f, 0.55f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -80f), new Vector2(1800f, 70f));
-            _overRetry = Label.Create(_overPanel.transform, "OverRetry", 68, Color.white)
+            _overRetry = BlockText.Create(_overPanel.transform, "OverRetry", 68, Color.white)
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1800f, 100f));
             _overRetry.SetText("PRESS SHIFT TO RETRY");
             _overPanel.SetActive(false);
@@ -316,8 +329,7 @@ namespace KT.ShiftIt.Game
             drt.offsetMin = Vector2.zero; drt.offsetMax = Vector2.zero;
 
             _quitTitle = Label.Create(_quitPanel.transform, "QuitTitle", 110, new Color(1f, 0.82f, 0.16f))
-                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(1700f, 160f))
-                .SetOutline(6f);
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 170f), new Vector2(1700f, 160f));
             _quitTitle.SetText("QUIT SHIFT IT?");
             _quitHelp = Label.Create(_quitPanel.transform, "QuitHelp", 40, new Color(0.78f, 0.82f, 0.9f))
                 .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), new Vector2(1700f, 70f));
@@ -352,9 +364,10 @@ namespace KT.ShiftIt.Game
             colours.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f);
             btn.colors = colours;
 
-            var l = Label.Create(go.transform, "Text", 46, Color.white);
-            l.SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(400f, 120f));
-            l.SetText(text);
+            BlockText.Create(go.transform, "Text", 40, Color.white)
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                             Vector2.zero, new Vector2(400f, 120f))
+                .SetText(text);
             return btn;
         }
 
@@ -378,11 +391,11 @@ namespace KT.ShiftIt.Game
         public string StickyTipText => _tipText != null ? _tipText.Raw.text : "";
 
         // ---- what the player can actually read, for the automated view checks ----
-        public string ScoreText => _score.Raw.text;
-        public string ComboText => _combo.gameObject.activeSelf ? _combo.Raw.text : "";
-        public string BestText => _best.Raw.text;
-        public string ZoneText => _zone.Raw.text;
-        public string PassesText => _passes.Raw.text;
+        public string ScoreText => _score.Text;
+        public string ComboText => _combo.gameObject.activeSelf ? _combo.Text : "";
+        public string BestText => _best.Text;
+        public string ZoneText => _zone.Text;
+        public string PassesText => _passes.Text;
         public string HintText => _hint.Raw.color.a > 0.05f ? _hint.Raw.text : "";
         public string ReasonText => _overReason.Raw.text;
         public bool TitleShown => _titlePanel.activeSelf;
@@ -407,7 +420,7 @@ namespace KT.ShiftIt.Game
             _passes.SetActive(playing);
 
             // Title
-            bool title = sim.Phase == Phase.Title;
+            bool title = sim.Phase == Phase.Title && !SuppressTitle;
             if (_titlePanel.activeSelf != title) _titlePanel.SetActive(title);
             if (title)
             {
@@ -561,7 +574,7 @@ namespace KT.ShiftIt.Game
             Vector2 screen = cam.WorldToScreenPoint(worldPos);
             Vector2 local;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screen, null, out local);
-            var l = Label.Create(_root, "Pop", 70, colour);
+            var l = BlockText.Create(_root, "Pop", 54, colour);
             l.SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), local, new Vector2(400f, 90f));
             l.SetText(text);
             _pops.Add(new ScorePop { L = l, T = 0f, From = local });

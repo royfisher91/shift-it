@@ -73,7 +73,7 @@ A typical run lasts about a minute.
 | **RIGHT SHIFT** | throw right |
 | **SHIFT** | start, and retry |
 | **ESC** | quit (desktop build) |
-| **TAB** | settings (music, sound, fullscreen) |
+| **TAB** | settings, from the title screen (music, sound, fullscreen) |
 | **Touch** | tap the left or right half of the screen |
 
 No mouse, no arrows, no WASD, no Space **in the game**. The settings screen takes the mouse — it is
@@ -129,6 +129,13 @@ Built with Unity 6000.6.4f1 by **KT Game Development**.
 - [x] Animated GIFs for the page (early game, late game with blockers)
 - [ ] Final WebGL upload with "click to play" disabled so Shift reaches the game immediately
 - [ ] Set the itch embed to 1280×720 and tick "fullscreen button"
+
+### Verified before upload
+
+The WebGL build is gzip-compressed, which normally only loads if the host sends
+`Content-Encoding: gzip`. This build has Unity's **decompression fallback** switched on, and that
+was confirmed by serving it from a plain static server with no such header and playing a full run
+through to game over. So the zip will load on itch regardless of how itch serves `.unityweb`.
 
 ### Upload settings that matter for this game
 

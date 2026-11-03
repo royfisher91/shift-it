@@ -43,6 +43,38 @@ const OUT = arg('out', 'D:\\KT\\ShiftIt\\Review\\webgl_session');
 const WHICH = arg('browser', 'edge');
 const PORT = parseInt(arg('port', '9344'), 10);
 const RUNS = parseInt(arg('runs', '10'), 10);
+const SKILL = arg('skill', 'average');
+// Serve the build the way a plain static host does: no Content-Encoding header at all. Unity's
+// gzip build then has to unpack itself in JavaScript via the decompression fallback. This is the
+// exact condition on itch.io, and the difference between a page that loads and a blank screen.
+const NO_ENCODING = process.argv.indexOf('--no-encoding') >= 0;
+
+/**
+ * The same read model the in-editor bot uses (SimBot.cs).
+ *
+ * The first version of this driver read the exact fuse fraction and band bounds off the bridge and
+ * threw perfectly every time, with no reaction time and no misreads. It reached a median of 130
+ * passes and a best of 290 against a game tuned for 15-35. That number says nothing about the
+ * game; it describes a bot nobody has to play against. This project already lost a day to exactly
+ * that mistake in Stage 1, so the driver now has to LOOK before it knows, and can still slip.
+ */
+const SKILLS = {
+  perfect: { read: 0.0,  misread: 0.0,  jitter: 0.0 },
+  skilled: { read: 0.30, misread: 0.02, jitter: 0.030 },
+  average: { read: 0.52, misread: 0.06, jitter: 0.055 },
+};
+const P = SKILLS[SKILL] || SKILLS.average;
+
+// A small deterministic RNG, so a session can be repeated exactly when chasing something.
+let _seed = parseInt(arg('seed', '12345'), 10) >>> 0;
+function rnd() {
+  _seed = (_seed * 1664525 + 1013904223) >>> 0;
+  return _seed / 4294967296;
+}
+function gauss(sd) {
+  const u = Math.max(1e-9, rnd()), v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sd;
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -63,9 +95,22 @@ function serve(root) {
     if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       res.writeHead(404); res.end('no'); return;
     }
-    const h = { 'Content-Type': types[path.extname(file).toLowerCase()] || 'application/octet-stream' };
-    // Unity can ship its payload gzipped; say so or the browser will not unpack it.
-    if (file.endsWith('.gz')) h['Content-Encoding'] = 'gzip';
+    // Unity names its compressed payload "<real ext>.unityweb", so the real type is the
+    // extension UNDERNEATH that suffix. Serve the wrong type and the loader rejects the wasm.
+    let typed = file;
+    let gz = false;
+    if (typed.endsWith('.unityweb') || typed.endsWith('.gz')) {
+      typed = typed.slice(0, typed.lastIndexOf('.'));
+      // Only claim gzip if the bytes really are gzip: a build can be made uncompressed and keep
+      // the same file names, and a wrong Content-Encoding fails with a blank screen.
+      const fd = fs.openSync(file, 'r');
+      const magic = Buffer.alloc(2);
+      fs.readSync(fd, magic, 0, 2, 0);
+      fs.closeSync(fd);
+      gz = magic[0] === 0x1f && magic[1] === 0x8b;
+    }
+    const h = { 'Content-Type': types[path.extname(typed).toLowerCase()] || 'application/octet-stream' };
+    if (gz && !NO_ENCODING) h['Content-Encoding'] = 'gzip';
     res.writeHead(200, h);
     fs.createReadStream(file).pipe(res);
   });
@@ -143,26 +188,52 @@ class Cdp {
 }
 
 /**
+ * Per-turn state for the read model: how long this catch has been in the player's hands, and
+ * whether the tells were actually taken in.
+ */
+function newTurnState() {
+  return { t0: Date.now(), target: null, read: null };
+}
+
+/** Has the player had long enough to take in this turn's tells, and did they? */
+function didRead(turn) {
+  if (turn.read !== null) return turn.read;
+  const elapsed = (Date.now() - turn.t0) / 1000;
+  const frac = P.read <= 0 ? 1 : Math.min(1, Math.max(0, elapsed / P.read));
+  if (rnd() >= frac) return null;          // still looking; no decision yet
+  turn.read = rnd() >= P.misread;          // decided, correctly or not
+  return turn.read;
+}
+
+/**
  * Decide what to press, from the same facts a player can see.
  * Returns 'L', 'R', or null for "keep holding".
  */
-function decide(st) {
+function decide(st, turn) {
   if (st.phase !== PHASE.PLAYER) return null;
+
+  const read = didRead(turn);
+  if (read === null) return null;          // has not taken the turn in yet
+
+  // Pick the moment to let go: somewhere in the green band, with a human's jitter on it.
+  if (turn.target === null) {
+    const mid = (st.bandLo + st.bandHi) / 2;
+    turn.target = mid + gauss(P.jitter);
+  }
+  if (st.fuse > turn.target) return null;  // not yet
+
+  if (!read) {
+    // Misread the turn: throw at a side without checking what is standing there.
+    return rnd() < 0.5 ? 'L' : 'R';
+  }
 
   // A green dud must NOT be thrown - holding it to the end is worth points.
   if (st.bomb === BOMB.DUD) return null;
 
-  // Which slots can actually be thrown at right now.
   const open = [];
   if (st.slots[0] === 0) open.push(0);
   if (st.slots[1] === 0) open.push(1);
-  if (open.length === 0) return null;            // both blocked: wait for one to open
-
-  // Aim for a PERFECT: throw once the remaining fuse has fallen into the green band. Accept
-  // "already below the band" too, because a dropped frame must not turn into holding to zero.
-  const inBand = st.fuse <= st.bandHi && st.fuse >= st.bandLo;
-  const belowBand = st.fuse < st.bandLo;
-  if (!inBand && !belowBand) return null;        // too early, keep holding
+  if (open.length === 0) return null;      // both blocked: wait for one to open
 
   const slot = open[0];
   // Mirrored turns swap the keys: to reach the left slot you press RIGHT Shift.
@@ -257,6 +328,11 @@ function decide(st) {
 
     let earlyDone = false, lateDone = false;
     let framesEarly = 0, framesLate = 0;
+    // How many run records the page held before this run. The game reports a run end on its
+    // GameOver event, which lands AFTER the explosion finishes playing - noticeably later than
+    // the Failing phase this loop breaks on. Reading "the last record" after a fixed wait
+    // therefore attributed run N-1's result to run N, and left run 1 with none at all.
+    let seenRuns = 0;
 
     for (let run = 1; run <= RUNS; run++) {
       // --- start the run ---
@@ -274,6 +350,9 @@ function decide(st) {
       // --- play it ---
       const t0 = Date.now();
       const wantEarly = run === 1 && !earlyDone;
+      let turn = newTurnState();
+      let lastPasses = -1;
+      let lastPhase = -1;
       while (Date.now() - t0 < 180000) {
         st = await cdp.state();
         if (!st) break;
@@ -288,19 +367,32 @@ function decide(st) {
           if (framesLate >= 70) lateDone = true;
         }
 
-        const press = decide(st);
-        if (press) { await cdp.tap(press); await sleep(120); }
-        else await sleep(40);
+        // A new catch starts a new turn: the tells have to be read again.
+        if (st.passes !== lastPasses || (st.phase === PHASE.PLAYER && lastPhase !== PHASE.PLAYER)) {
+          turn = newTurnState();
+          lastPasses = st.passes;
+        }
+        lastPhase = st.phase;
+
+        const press = decide(st, turn);
+        if (press) { await cdp.tap(press); await sleep(120); turn = newTurnState(); }
+        else await sleep(30);
       }
       if (wantEarly && framesEarly > 0) earlyDone = true;
 
       // --- read the result the game itself reported ---
-      await sleep(900);
-      const ended = await cdp.evaluate('JSON.stringify(window.shiftItRuns || [])');
-      const list = JSON.parse(ended || '[]');
-      const last = list.length ? list[list.length - 1] : null;
-      const rec = last
-        ? { run: run, passes: last.passes, score: last.score, reason: last.reason }
+      // Wait for a NEW record rather than a fixed delay, so each run reports its own result.
+      let list = [];
+      for (let i = 0; i < 60; i++) {
+        const ended = await cdp.evaluate('JSON.stringify(window.shiftItRuns || [])');
+        list = JSON.parse(ended || '[]');
+        if (list.length > seenRuns) break;
+        await sleep(250);
+      }
+      const fresh = list.length > seenRuns ? list[list.length - 1] : null;
+      seenRuns = list.length;
+      const rec = fresh
+        ? { run: run, passes: fresh.passes, score: fresh.score, reason: fresh.reason }
         : { run: run, passes: st ? st.passes : -1, score: st ? st.score : -1, reason: 'UNREPORTED' };
       summary.runs.push(rec);
       console.log('  run ' + String(run).padStart(2) +
@@ -321,6 +413,7 @@ function decide(st) {
     const passes = ok.map((r) => r.passes).sort((a, b) => a - b);
     const mean = passes.length ? passes.reduce((a, b) => a + b, 0) / passes.length : 0;
     const median = passes.length ? passes[Math.floor(passes.length / 2)] : 0;
+    summary.skill = SKILL;
     summary.stats = {
       runs: ok.length,
       meanPasses: +mean.toFixed(1),
@@ -333,6 +426,8 @@ function decide(st) {
     fs.writeFileSync(path.join(OUT, 'session.json'), JSON.stringify(summary, null, 2));
 
     console.log('');
+    console.log('SKILL   ' + SKILL + '  (read ' + P.read + 's, misread ' +
+                (P.misread * 100).toFixed(0) + '%, jitter ' + P.jitter + ')');
     console.log('RESULT  runs=' + ok.length + '/' + RUNS +
                 '  mean=' + summary.stats.meanPasses +
                 '  median=' + summary.stats.medianPasses +

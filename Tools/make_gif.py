@@ -30,7 +30,14 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--width", type=int, default=640)
     ap.add_argument("--fps", type=int, default=12)
+    ap.add_argument("--colors", type=int, default=256,
+                    help="palette size. The game has flat bold colours on big gradients, and a "
+                         "small palette spends itself on the gradient and turns the blue robot "
+                         "teal and the red one olive")
     ap.add_argument("--max-frames", type=int, default=48)
+    ap.add_argument("--crop", default=None,
+                    help="x,y,w,h in pixels - used to cut the browser page chrome away so the "
+                         "GIF shows the game and not Unity's template footer")
     args = ap.parse_args()
 
     files = sorted(glob.glob(os.path.join(args.frames, "*.png")))
@@ -44,13 +51,20 @@ def main():
         step = len(files) / float(args.max_frames)
         files = [files[int(i * step)] for i in range(args.max_frames)]
 
+    box = None
+    if args.crop:
+        x, y, w, h = (int(v) for v in args.crop.split(","))
+        box = (x, y, x + w, y + h)
+
     imgs = []
     for f in files:
         im = Image.open(f).convert("RGB")
+        if box:
+            im = im.crop(box)
         if im.width != args.width:
             im = im.resize((args.width, int(round(im.height * args.width / im.width))),
                            Image.LANCZOS)
-        imgs.append(im.convert("P", palette=Image.ADAPTIVE, colors=128))
+        imgs.append(im.convert("P", palette=Image.ADAPTIVE, colors=args.colors))
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
     imgs[0].save(args.out, save_all=True, append_images=imgs[1:],

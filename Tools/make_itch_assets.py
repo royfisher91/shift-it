@@ -36,10 +36,54 @@ def crop_to_aspect(im, aspect, anchor_y=0.5, anchor_x=0.5):
     return im.crop((x, y, x + nw, y + nh))
 
 
-def make_cover(src, dst, anchor_y=0.5, anchor_x=0.5):
+def make_cover(src, dst, anchor_y=0.5, anchor_x=0.5, fit=False, trim_bottom=0.0,
+               erase=None):
+    """
+    fit=False crops a 630x500 window out of the frame. That suits a gameplay shot but destroys a
+    title screen: the cover is 1.26:1 against the game's 1.78:1, so a centre crop throws away about
+    280 pixels from each side - which took the S off SHIFT, the end off IT! and half the SETTINGS
+    button with it.
+
+    fit=True scales the WHOLE frame to the cover width and extends the top and bottom edge rows to
+    fill the remaining height. The game's sky is a horizontal gradient, so stretching its edge rows
+    continues it rather than showing letterbox bars.
+    """
     im = Image.open(src).convert("RGB")
-    im = crop_to_aspect(im, COVER_W / COVER_H, anchor_y, anchor_x)
-    im = im.resize((COVER_W, COVER_H), Image.LANCZOS)
+    # Cut interface chrome off the bottom before fitting. The title screen carries a SETTINGS
+    # button in its corner, which belongs in the game and not on the store page.
+    if trim_bottom > 0:
+        im = im.crop((0, 0, im.width, int(round(im.height * (1.0 - trim_bottom)))))
+    if fit:
+        scaled = im.resize((COVER_W, int(round(im.height * COVER_W / im.width))), Image.LANCZOS)
+        card = Image.new("RGB", (COVER_W, COVER_H))
+        top = (COVER_H - scaled.height) // 2
+        if top > 0:
+            card.paste(scaled.crop((0, 0, COVER_W, 1)).resize((COVER_W, top), Image.NEAREST), (0, 0))
+            bot = COVER_H - top - scaled.height
+            if bot > 0:
+                card.paste(
+                    scaled.crop((0, scaled.height - 1, COVER_W, scaled.height))
+                          .resize((COVER_W, bot), Image.NEAREST),
+                    (0, top + scaled.height))
+        card.paste(scaled, (0, max(0, top)))
+        im = card
+    else:
+        im = crop_to_aspect(im, COVER_W / COVER_H, anchor_y, anchor_x)
+        im = im.resize((COVER_W, COVER_H), Image.LANCZOS)
+    # Paint out a rectangle of interface chrome by extending the pixels immediately to its left.
+    # The backdrop there is a smooth horizontal gradient, so this is seamless - and it is a far
+    # safer way to lose a button than trimming the frame, which cut through the player robot and
+    # smeared it into a column the moment the edge-extension reached live art.
+    if erase:
+        ex, ey, ew, eh = erase
+        x0, y0 = int(ex * im.width), int(ey * im.height)
+        x1, y1 = x0 + int(ew * im.width), y0 + int(eh * im.height)
+        x0, y0 = max(0, x0), max(0, y0)
+        x1, y1 = min(im.width, x1), min(im.height, y1)
+        if x0 > 0 and x1 > x0 and y1 > y0:
+            strip = im.crop((x0 - 1, y0, x0, y1)).resize((x1 - x0, y1 - y0), Image.NEAREST)
+            im.paste(strip, (x0, y0))
+
     # A touch of sharpening, because itch downscales covers again for the browse grid.
     im = im.filter(ImageFilter.UnsharpMask(radius=1.2, percent=55, threshold=3))
     im.save(dst, "PNG", optimize=True)
@@ -61,6 +105,12 @@ def main():
     ap.add_argument("--cover-src", default=None, help="image to cut the cover from")
     ap.add_argument("--cover-y", type=float, default=0.5)
     ap.add_argument("--cover-x", type=float, default=0.5)
+    ap.add_argument("--cover-trim-bottom", type=float, default=0.0,
+                    help="fraction of the source height to cut off the bottom first")
+    ap.add_argument("--cover-erase", default=None,
+                    help="x,y,w,h as fractions of the cover - chrome to paint out")
+    ap.add_argument("--cover-fit", action="store_true",
+                    help="fit the whole frame and extend the edges instead of cropping")
     ap.add_argument("--shots", nargs="*", default=None)
     args = ap.parse_args()
 
@@ -72,7 +122,8 @@ def main():
         print("MISSING cover source: " + cover_src)
         return 2
     cover = make_cover(cover_src, os.path.join(args.out, "cover_630x500.png"),
-                       args.cover_y, args.cover_x)
+                       args.cover_y, args.cover_x, args.cover_fit, args.cover_trim_bottom,
+                       tuple(float(v) for v in args.cover_erase.split(',')) if args.cover_erase else None)
     print("cover   " + cover)
 
     shots = args.shots

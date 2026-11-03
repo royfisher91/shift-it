@@ -455,3 +455,40 @@ following tick. **To change:** the tolerance in `PlayTests.cs`.
 **D-050 — The itch page address is recorded in the repo.**
 `https://kadence-tech-games.itch.io/shift-it` is now in `README.md` and at the top of
 `Docs/ITCH_PAGE.md`, so the link lives in one place rather than being retyped.
+
+**D-051 — The browser play session was rebuilt twice, because the first two versions lied.**
+Version one read the exact fuse fraction and band bounds off the telemetry bridge and threw
+perfectly: median 130 passes, best 290, against a game tuned for 15-35. That number describes a bot
+nobody has to play against, not the game — the same mistake that cost this project a day in Stage 1.
+The driver now carries the same read model as the in-editor bot (`SimBot.cs`): it must LOOK for
+`ReadSeconds` before it knows what it is holding, it can misread, and its release carries jitter.
+Version two then attributed results to the wrong runs: the game reports a run end on its GameOver
+event, which lands after the explosion finishes playing — later than the Failing phase the driver
+breaks on — so a fixed wait read "the last record", which could be the previous run's, and left run
+one with none at all. It now waits for a genuinely new record. **To change:** `--skill` on
+`Tools/webgl_play_session.js` (`perfect`, `skilled`, `average`).
+
+**D-052 — The browser session is a robustness check, not a balance measurement.**
+It proves the shipped build plays: ten complete runs, retries, the lockout, and every blocker
+category failing for the right reason in a real browser. It does NOT re-measure difficulty, because
+the driver still sees exact numbers where a player sees a ring. The authoritative balance figures
+remain the in-editor `SimBot` runs at `average` and `skilled`.
+
+**D-053 — itch hosting was verified rather than assumed.**
+A gzip Unity build only loads if the host sends `Content-Encoding: gzip`. Rather than trust the
+project setting, the build was served from a static server with that header deliberately withheld
+and played through a full run. Unity's decompression fallback handled it. `--no-encoding` on the
+session driver reproduces that condition.
+
+**D-054 — The cover image fits the frame instead of cropping it.**
+itch wants 630x500 (1.26:1) and the game renders 1.78:1, so a centre crop throws away about 280
+pixels from each side — which took the S off SHIFT and half the SETTINGS button with it. Trimming
+the bottom to lose that button instead cut through the button, and then through the player robot,
+smearing each into a column where the edge-extension met live art. The cover now scales the whole
+frame to width, extends the sky gradient into the bands above and below, and paints out just the
+button. **To change:** `--cover-fit`, `--cover-erase` and `--cover-trim-bottom` on
+`Tools/make_itch_assets.py`.
+
+**D-055 — GIFs are built at a full 256-colour palette.**
+At 128 colours the palette spent itself on the sky gradient and the blue robot came out teal while
+the red one came out olive. **To change:** `--colors` on `Tools/make_gif.py`.

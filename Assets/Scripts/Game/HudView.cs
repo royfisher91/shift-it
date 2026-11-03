@@ -189,14 +189,20 @@ namespace KT.ShiftIt.Game
             // reminder instead of a toggle, and the mouse target goes with it.
             _modeHelp.SetText(GameRoot.ModeAEnabled ? "TAB or click to change mode" : "");
             _startLine = BlockText.Create(_titlePanel.transform, "Start", 72, Color.white)
-                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -220f), new Vector2(1700f, 100f));
+                .SetAnchored(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -130f), new Vector2(1700f, 100f));
             _startLine.SetText("PRESS SHIFT TO START");
             BuildStickyTip();
 
-            // Settings is mouse-driven, which the brief allows for menus. It sits under the start
-            // prompt so it never competes with "PRESS SHIFT TO START" for attention.
+            // Settings is mouse-driven, which the brief allows for menus. It sits in the bottom
+            // right corner: out of the centre column where the player robot stands, above the
+            // Sticky Keys tip strip, and never competing with "PRESS SHIFT TO START".
             SettingsButton = MakeButton(_titlePanel.transform, "SettingsBtn", "SETTINGS",
-                                        new Vector2(0f, -330f), new Color(0.24f, 0.30f, 0.38f));
+                                        Vector2.zero, new Color(0.24f, 0.30f, 0.38f));
+            var sbr = SettingsButton.GetComponent<RectTransform>();
+            sbr.anchorMin = sbr.anchorMax = new Vector2(1f, 0f);
+            sbr.pivot = new Vector2(1f, 0f);
+            sbr.sizeDelta = new Vector2(300f, 92f);
+            sbr.anchoredPosition = new Vector2(-44f, 152f);
 
             // The mode line is a real button so the title screen works with the mouse alone.
             var btn = _modeLine.gameObject.AddComponent<Button>();

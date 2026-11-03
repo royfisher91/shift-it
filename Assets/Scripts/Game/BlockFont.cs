@@ -160,6 +160,24 @@ namespace KT.ShiftIt.Game
             return dx * dx + dy * dy <= r * r + 1e-4f;
         }
 
+        /// <summary>
+        /// Build every glyph up front, at boot, where sprite generation belongs.
+        ///
+        /// Without this the first PERFECT!, the first blocker sign and each new zone name each
+        /// built their glyphs the moment they were first drawn - and that showed up as a single
+        /// 161 ms hitch in the middle of play, which the per-frame budget test caught. Generating
+        /// the whole alphabet once costs a few milliseconds at startup, where the cost is paid
+        /// before the player is doing anything.
+        /// </summary>
+        public static void Warm(int cell)
+        {
+            foreach (var kv in Glyphs)
+            {
+                if (kv.Key == ' ') continue;
+                Glyph(kv.Key, cell);
+            }
+        }
+
         public static int CachedGlyphs => _cache.Count;
     }
 }

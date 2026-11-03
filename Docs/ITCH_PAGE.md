@@ -1,6 +1,7 @@
 # itch.io page copy — SHIFT IT!
 
 **Page: https://kadence-tech-games.itch.io/shift-it** (draft)
+**Source: https://github.com/royfisher91/shift-it**
 
 Draft copy for the store page. Screenshots, cover art and the GIF are produced by the capture
 harness and live outside the repository at `D:\KT\ShiftIt\Review\sheets`.
@@ -112,7 +113,10 @@ are synthesised in code too. The music and the explosion are CC0 from
 CC0 asks for no attribution; these are credited because three of the authors said a mention would be
 welcome.
 
-**Code: MIT. All art and audio: CC0 1.0.** Full details in `ASSETS_LICENCE.md` in the repository.
+**Code: MIT. All art and audio: CC0 1.0.**
+
+Full source, and the licence notes for every sourced file, are on GitHub:
+[github.com/royfisher91/shift-it](https://github.com/royfisher91/shift-it)
 
 Built with Unity 6000.6.4f1 by **KT Game Development**.
 

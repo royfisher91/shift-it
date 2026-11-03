@@ -17,7 +17,10 @@ namespace KT.ShiftIt.Game
     /// </summary>
     public sealed class BlockText : MonoBehaviour
     {
-        const int CellPx = 8;                       // glyph texture resolution, not screen size
+        public const int CellPx = 8;                // glyph texture resolution, not screen size
+
+        /// <summary>Build the whole alphabet at boot, so no glyph is ever generated mid-play.</summary>
+        public static void WarmFont() => BlockFont.Warm(CellPx);
 
         readonly List<Image> _pool = new List<Image>();
         readonly List<Image> _shadowPool = new List<Image>();

@@ -53,3 +53,8 @@ crashlytics-build.properties
 # during Stage 1; this keeps it out.
 /Assets/InitTestScene*.unity
 /Assets/InitTestScene*.unity.meta
+
+# Python bytecode from the Tools scripts. One .pyc reached the repo on 2 Nov 2026 when a tool was
+# imported rather than run; this stops it happening again.
+__pycache__/
+*.pyc

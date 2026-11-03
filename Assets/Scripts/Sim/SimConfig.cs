@@ -13,20 +13,23 @@ namespace KT.ShiftIt.Sim
     [Serializable]
     public sealed class SimConfig
     {
-        // ---- Fuse (Roy's change request, 2 Nov 2026) --------------------------------
+        // ---- Fuse (Roy, 2 Nov 2026; steepened 3 Nov 2026) --------------------------
+        // The fuse now shortens half again as fast and bottoms out 16% lower, so the squeeze
+        // arrives at pass 24 instead of pass 34. fuseStart is deliberately UNCHANGED: a first
+        // bomb that is already hurried teaches the player nothing.
         public float fuseStart = 3.0f;
-        public float fusePerPass = 0.06f;
-        public float fuseMin = 0.95f;
+        public float fusePerPass = 0.09f;
+        public float fuseMin = 0.80f;
 
         // ---- Receiver return --------------------------------------------------------
         public float returnDelayStart = 0.55f;
-        public float returnDelayPerPass = 0.01f;
-        public float returnDelayMin = 0.20f;
+        public float returnDelayPerPass = 0.014f;
+        public float returnDelayMin = 0.15f;
 
         /// <summary>Bomb flight time one way. "Return throw speeds up too."</summary>
         public float flightStart = 0.26f;
-        public float flightPerPass = 0.0025f;
-        public float flightMin = 0.14f;
+        public float flightPerPass = 0.0035f;
+        public float flightMin = 0.11f;
 
         // ---- PERFECT band: fraction of the fuse REMAINING at the moment of release --
         public float bandLow = 0.18f;
@@ -76,16 +79,30 @@ namespace KT.ShiftIt.Sim
         public float modeAPerfectWithinDeg = 0f;
 
         // ---- Blocker and twist unlocks, by passes completed -------------------------
-        public int unlockShield = 5;
-        public int unlockAsleep = 10;
-        public int unlockOnBreak = 10;
-        public int unlockHot = 12;
-        public int unlockMirrored = 18;
-        public int unlockDud = 25;
-        public int unlockBothBlocked = 30;
-        public int unlockSwap = 40;
+        //
+        // The whole ladder slid in by about 30% on 3 Nov 2026, so the first twist lands at pass 3
+        // instead of 5 and the rest keep their spacing relative to each other.
+        //
+        // WHY THE WHOLE LADDER AND NOT JUST THE FIRST RUNG: a 400-run sweep of every dial
+        // separately showed that unlockMirrored ALONE sets where an average player dies - the
+        // median lands about three passes after it and barely responds to anything else. Blocker
+        // frequency, the dud and both-blocked unlocks and the fuse all moved the median by a pass
+        // or none at all. That is because an unmirrored turn is read correctly almost every time,
+        // so the run only really starts killing people once left means right. Moving the first
+        // rung without moving that one would have changed the opening and left the median at 20.
+        //
+        // Measured: average median 20 -> 16 (n=400), with a skilled player still reaching 60+ in
+        // 22.5% of runs. See DECISIONS_FOR_ROY D-056.
+        public int unlockShield = 3;
+        public int unlockAsleep = 7;
+        public int unlockOnBreak = 7;
+        public int unlockHot = 8;
+        public int unlockMirrored = 13;
+        public int unlockDud = 18;
+        public int unlockBothBlocked = 21;
+        public int unlockSwap = 28;
         /// <summary>Mode A shows two blocked robots at once from here.</summary>
-        public int unlockTwoBlockedModeA = 30;
+        public int unlockTwoBlockedModeA = 21;
 
         // ---- Twist chances ----------------------------------------------------------
         public float chanceHot = 0.20f;
@@ -96,18 +113,22 @@ namespace KT.ShiftIt.Sim
 
         /// <summary>
         /// Probability that a normal turn has a blocker at all, ramped between the shield
-        /// unlock and blockerRampEndPass. This is the main difficulty dial and the one number
-        /// the 20-run balance sweep tunes. Roy's spec did not fix it.
+        /// unlock and blockerRampEndPass. Roy's spec did not fix it.
+        ///
+        /// Called "the main difficulty dial" here until Stage 4 measured it: pushing it from 0.35
+        /// to 0.98 moves an average player's median by about four passes, because what kills that
+        /// player is failing to READ a turn rather than how often a turn has something in it. The
+        /// dial that actually sets the median is unlockMirrored, above.
         /// </summary>
         public float blockerChanceAtUnlock = 0.55f;
         public float blockerChanceAtEnd = 0.98f;
-        public int blockerRampEndPass = 26;
+        public int blockerRampEndPass = 20;
         /// <summary>
         /// The pass at which blockers start appearing at all. Separate from unlockShield on
         /// purpose: tying the two together meant a test could not force one blocker KIND without
         /// also switching the whole ramp off.
         /// </summary>
-        public int blockerRampStartPass = 5;
+        public int blockerRampStartPass = 3;
 
         /// <summary>Fuse fraction remaining when a both-blocked turn opens one side.</summary>
         public float bothBlockedOpenAtMin = 0.40f;

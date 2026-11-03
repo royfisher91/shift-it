@@ -52,16 +52,19 @@ So the game is a dare: hold it longer than feels sensible.
 
 | From | What |
 |---|---|
-| 5 passes | A robot raises an energy **SHIELD**. Throw at it and the bomb bounces back. |
-| 10 | One is **ASLEEP** — eyes shut, floating Zzz, and it stops bobbing. |
-| 10 | One is **ON BREAK** — the spot is just empty, with a dashed outline and a sign. |
-| 12 | **RED HOT** bombs: half the fuse, double points. |
-| 18 | **MIRRORED** turns: left Shift throws right. The key labels swap and turn pink. |
-| 25 | Green **DUD** bombs. Do *not* throw them. Hold on and let it fizzle for +2. |
-| 30 | **BOTH SIDES BLOCKED** — one opens part way through the fuse. You have to wait. |
-| 40 | The blocked side can **SWAP** while you are still holding. |
+| 3 passes | A robot raises an energy **SHIELD**. Throw at it and the bomb bounces back. |
+| 7 | One is **ASLEEP** — eyes shut, floating Zzz, and it stops bobbing. |
+| 7 | One is **ON BREAK** — the spot is just empty, with a dashed outline and a sign. |
+| 8 | **RED HOT** bombs: half the fuse, double points. |
+| 13 | **MIRRORED** turns: left Shift throws right. The key labels swap and turn pink. |
+| 18 | Green **DUD** bombs. Do *not* throw them. Hold on and let it fizzle for +2. |
+| 21 | **BOTH SIDES BLOCKED** — one opens part way through the fuse. You have to wait. |
+| 28 | The blocked side can **SWAP** while you are still holding. |
 
-A typical run lasts about a minute.
+And the fuse keeps shortening the whole way — three seconds on the first bomb, four fifths of a
+second by pass 25. The robots throw back faster too.
+
+A typical run lasts about forty seconds.
 
 ---
 

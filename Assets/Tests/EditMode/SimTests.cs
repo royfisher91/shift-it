@@ -69,22 +69,43 @@ namespace KT.ShiftIt.Tests
         [Test]
         public void Fuse_RampMatchesSpec()
         {
+            // Stage 4 steepened this: 0.09 s per pass down to a 0.80 s floor, so the squeeze
+            // arrives at pass 25 instead of pass 34. The opening 3.0 s is unchanged.
             var c = Cfg();
             Assert.AreEqual(3.00f, c.FuseFor(0), 1e-4f, "fuse starts at 3.0 s");
-            Assert.AreEqual(2.40f, c.FuseFor(10), 1e-4f, "0.06 s per pass");
-            Assert.AreEqual(1.20f, c.FuseFor(30), 1e-4f);
-            Assert.AreEqual(0.95f, c.FuseFor(60), 1e-4f, "clamped to the 0.95 s minimum");
-            Assert.AreEqual(0.95f, c.FuseFor(500), 1e-4f, "never goes below the minimum");
+            Assert.AreEqual(2.10f, c.FuseFor(10), 1e-4f, "0.09 s per pass");
+            Assert.AreEqual(1.20f, c.FuseFor(20), 1e-4f);
+            Assert.AreEqual(0.84f, c.FuseFor(24), 1e-4f, "still above the floor at pass 24");
+            Assert.AreEqual(0.80f, c.FuseFor(25), 1e-4f, "clamped to the 0.80 s minimum from pass 25");
+            Assert.AreEqual(0.80f, c.FuseFor(500), 1e-4f, "never goes below the minimum");
         }
 
         [Test]
         public void ReturnDelay_RampMatchesSpec()
         {
+            // Stage 4: the receiver turns the bomb round faster as the run goes on - 0.014 s per
+            // pass to a 0.15 s floor, reached at pass 29.
             var c = Cfg();
             Assert.AreEqual(0.55f, c.ReturnDelayFor(0), 1e-4f);
-            Assert.AreEqual(0.45f, c.ReturnDelayFor(10), 1e-4f, "0.01 s per pass");
-            Assert.AreEqual(0.20f, c.ReturnDelayFor(40), 1e-4f, "clamped to 0.20 s");
-            Assert.AreEqual(0.20f, c.ReturnDelayFor(200), 1e-4f);
+            Assert.AreEqual(0.41f, c.ReturnDelayFor(10), 1e-4f, "0.014 s per pass");
+            Assert.AreEqual(0.15f, c.ReturnDelayFor(40), 1e-4f, "clamped to 0.15 s");
+            Assert.AreEqual(0.15f, c.ReturnDelayFor(200), 1e-4f);
+        }
+
+        /// <summary>
+        /// The flight ramp had NO spec test until Stage 4, which meant flightPerPass and flightMin
+        /// could be changed - as they were - with nothing to catch a typo. The fuse and return
+        /// ramps either side of it were both pinned; this was simply a hole.
+        /// </summary>
+        [Test]
+        public void Flight_RampMatchesSpec()
+        {
+            var c = Cfg();
+            Assert.AreEqual(0.260f, c.FlightFor(0), 1e-4f, "the bomb starts at 0.26 s in the air");
+            Assert.AreEqual(0.225f, c.FlightFor(10), 1e-4f, "0.0035 s per pass");
+            Assert.AreEqual(0.120f, c.FlightFor(40), 1e-4f);
+            Assert.AreEqual(0.110f, c.FlightFor(60), 1e-4f, "clamped to the 0.11 s minimum");
+            Assert.AreEqual(0.110f, c.FlightFor(500), 1e-4f, "never goes below the minimum");
         }
 
         [Test]

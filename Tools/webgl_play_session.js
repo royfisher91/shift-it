@@ -188,6 +188,64 @@ class Cdp {
 }
 
 /**
+ * Records the fuse length the RUNNING BUILD reports at each pass count, and the first pass at
+ * which it reports a mirrored turn.
+ *
+ * This exists because the balance numbers live in a JSON TextAsset that Unity LZ4-packs into
+ * WebGL.data, so grepping the shipped file for them does not work - and "the source says 0.09"
+ * is not evidence about the build. Reading the curve back out of the running game is.
+ */
+const fuseTrace = new Map();        // normal bombs
+const hotTrace = new Map();         // HOT bombs, which carry half the fuse
+let firstMirroredPass = null;
+let firstHotPass = null;
+const BOMB_HOT = 1;                 // BombKind.Hot
+
+function traceFuse(st) {
+  if (!st || st.fuseMax <= 0) return;
+  // A HOT bomb is given half the fuse (ShiftSim: FuseMax *= 0.5f), so the two kinds must be
+  // recorded apart. Mixed together they print as one curve with wild dropouts, which reads as a
+  // broken tool rather than as the mechanic it is.
+  const hot = st.bomb === BOMB_HOT;
+  const map = hot ? hotTrace : fuseTrace;
+  if (!map.has(st.passes)) map.set(st.passes, st.fuseMax);
+  if (hot && firstHotPass === null) firstHotPass = st.passes;
+  if (st.mirrored && firstMirroredPass === null) firstMirroredPass = st.passes;
+}
+
+function reportFuseTrace() {
+  const rows = [...fuseTrace.entries()].sort((a, b) => a[0] - b[0]);
+  if (!rows.length) return;
+  const at = (p) => { const r = rows.find((x) => x[0] === p); return r ? r[1] : null; };
+  console.log('');
+  console.log('FUSE CURVE as reported by the running build:');
+  let line = '  ';
+  for (const [p, f] of rows) {
+    if (p > 40) break;
+    line += 'p' + p + '=' + f.toFixed(2) + '  ';
+    if (line.length > 96) { console.log(line); line = '  '; }
+  }
+  if (line.trim()) console.log(line);
+  // Two independent points fix the slope; the floor is read where the curve stops falling.
+  const a = at(5), b = at(20);
+  if (a !== null && b !== null) {
+    const perPass = (a - b) / 15;
+    console.log('  slope between p5 and p20: ' + perPass.toFixed(4) + ' s per pass');
+  }
+  const floor = Math.min(...rows.map((r) => r[1]));
+  console.log('  normal-bomb floor: ' + floor.toFixed(3) + ' s');
+  if (hotTrace.size) {
+    const hotFloor = Math.min(...[...hotTrace.values()]);
+    console.log('  HOT-bomb floor:    ' + hotFloor.toFixed(3) +
+                ' s  <- the tightest demand the game ever makes');
+  }
+  console.log('  first HOT bomb at pass:      ' +
+              (firstHotPass === null ? '(none reached)' : firstHotPass));
+  console.log('  first MIRRORED turn at pass: ' +
+              (firstMirroredPass === null ? '(none reached)' : firstMirroredPass));
+}
+
+/**
  * Per-turn state for the read model: how long this catch has been in the player's hands, and
  * whether the tells were actually taken in.
  */
@@ -311,6 +369,7 @@ function decide(st, turn) {
     let st = null;
     for (let i = 0; i < 180; i++) {
       st = await cdp.state();
+      traceFuse(st);
       if (st) break;
       await sleep(1000);
     }
@@ -337,10 +396,12 @@ function decide(st, turn) {
     for (let run = 1; run <= RUNS; run++) {
       // --- start the run ---
       st = await cdp.state();
+      traceFuse(st);
       for (let i = 0; i < 40 && st && st.phase !== PHASE.PLAYER; i++) {
         if (st.phase === PHASE.TITLE || (st.phase === PHASE.OVER && !st.locked)) await cdp.tap('L');
         await sleep(200);
         st = await cdp.state();
+      traceFuse(st);
       }
       if (!st || st.phase === PHASE.TITLE) {
         summary.errors.push('run ' + run + ': never started');
@@ -355,6 +416,7 @@ function decide(st, turn) {
       let lastPhase = -1;
       while (Date.now() - t0 < 180000) {
         st = await cdp.state();
+      traceFuse(st);
         if (!st) break;
         if (st.phase === PHASE.OVER || st.phase === PHASE.FAILING) break;
 
@@ -403,6 +465,7 @@ function decide(st, turn) {
       // Clear the lockout before the next retry press.
       for (let i = 0; i < 30; i++) {
         st = await cdp.state();
+      traceFuse(st);
         if (st && !st.locked) break;
         await sleep(200);
       }
@@ -433,6 +496,7 @@ function decide(st, turn) {
                 '  median=' + summary.stats.medianPasses +
                 '  range=' + summary.stats.minPasses + '-' + summary.stats.maxPasses);
     console.log('FRAMES  early=' + framesEarly + '  late=' + framesLate);
+    reportFuseTrace();
     if (summary.errors.length) console.log('ERRORS  ' + summary.errors.join('; '));
     console.log((ok.length === RUNS && framesEarly > 0 && framesLate > 0)
       ? 'PLAY SESSION OK' : 'PLAY SESSION INCOMPLETE');

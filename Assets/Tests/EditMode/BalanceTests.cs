@@ -122,8 +122,12 @@ namespace KT.ShiftIt.Tests
                 if (blocker)
                 {
                     blockerDeaths++;
-                    Assert.GreaterOrEqual(r.Passes, 5,
-                        "no blocker exists before pass 5, so it cannot die to one earlier");
+                    // Read from the config, not restated as a literal: this assertion is about
+                    // the RULE (nothing can die to a blocker before blockers exist), and pinning
+                    // the number here just meant moving the ladder broke a test that still held.
+                    Assert.GreaterOrEqual(r.Passes, Cfg().blockerRampStartPass,
+                        "no blocker exists before pass " + Cfg().blockerRampStartPass +
+                        ", so it cannot die to one earlier");
                 }
             }
             Assert.Greater(blockerDeaths, 30, "a bot that aims at the blocked side must mostly die to one");
@@ -439,6 +443,43 @@ namespace KT.ShiftIt.Tests
             Log(Report("TARGET CHECK skilled (n=200)", rs));
             Assert.GreaterOrEqual(s.Max, 60f,
                 "Roy's target: a skilled player can reach 60+. Best of 200 runs was " + s.Max);
+        }
+
+        /// <summary>
+        /// Roy played the Stage 3 build, reached 115 passes and asked for the bottom half of his
+        /// own band: a new-player median of about 15-18, with a skilled player still reaching 60+.
+        ///
+        /// This is tighter than BalanceTarget_AverageDiesBetween15And35Passes on purpose. That test
+        /// guards the band the game must never leave; this one guards the point inside it that was
+        /// actually chosen, so a later change that drifts back towards 20 fails here and says so
+        /// instead of passing the wider check and quietly undoing the Stage 4 retune.
+        /// </summary>
+        [Test]
+        public void BalanceTarget_Stage4_AverageMedianIsFifteenToEighteen()
+        {
+            var rs = Sweep(ControlMode.LeftRight, BotSkill.Average, BigRuns);
+            var s = Describe(rs);
+            Log(Report("STAGE 4 TARGET average (n=200)", rs));
+            Assert.That(s.Median, Is.InRange(15f, 18f),
+                "Stage 4 target: a new player's median run is 15-18 passes. Median was " + s.Median);
+        }
+
+        /// <summary>
+        /// The ceiling stated as a REACH rather than a best-of. A single lucky maximum can clear 60
+        /// while the mode is in practice unreachable, so this asserts the share of runs that get
+        /// there - which is what "a skilled player can still reach 60+" actually means.
+        /// </summary>
+        [Test]
+        public void BalanceTarget_Stage4_SkilledReachesSixtyOftenEnough()
+        {
+            var rs = Sweep(ControlMode.LeftRight, BotSkill.Skilled, BigRuns);
+            int reached = 0;
+            foreach (var r in rs) if (r.Passes >= 60) reached++;
+            float pct = 100f * reached / rs.Count;
+            Log(string.Format("[SHIFTIT] skilled reached 60+ in {0}/{1} runs ({2:0.0}%)\n",
+                reached, rs.Count, pct));
+            Assert.GreaterOrEqual(pct, 10f,
+                "a skilled player must reach 60+ in at least 1 run in 10; it was " + pct + "%");
         }
 
         [Test]

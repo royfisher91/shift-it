@@ -492,3 +492,106 @@ button. **To change:** `--cover-fit`, `--cover-erase` and `--cover-trim-bottom` 
 **D-055 — GIFs are built at a full 256-colour palette.**
 At 128 colours the palette spent itself on the sky gradient and the blue robot came out teal while
 the red one came out olive. **To change:** `--colors` on `Tools/make_gif.py`.
+
+---
+
+## Stage 4 — the difficulty retune (3 Nov 2026)
+
+Roy played the Stage 3 build, reached 115 passes and asked for more pressure using the existing
+parts only: twists from pass 2–3 instead of 5, a fuse that keeps shortening, slightly faster throws
+and robot reactions, the green band left alone, and a new-player median of about 15–18 with skilled
+players still reaching 60+.
+
+**D-056 — The whole twist ladder slid in by about 30%, not just the first rung.**
+Roy asked for the first twist at pass 2–3. Sliding only that rung would have changed the opening
+and left the median exactly where it was, because a 400-run sweep of every dial separately showed
+that **`unlockMirrored` alone sets where an average player dies** — the median lands about three
+passes after it and barely responds to anything else. Blocker frequency moved it by four passes
+across its entire usable range; the dud, hot and both-blocked unlocks moved it by one or none. The
+reason is that an unmirrored turn is read correctly almost every time, so a run only starts killing
+people once left means right. So the ladder keeps its spacing and moves as a unit: shield 5→3,
+asleep and on-break 10→7, hot 12→8, **mirrored 18→13**, dud 25→18, both-blocked 30→21, swap 40→28,
+blocker ramp start 5→3 and end 26→20. **Measured: average median 20 → 16 (n=400 in the harness,
+confirmed at n=200 in-editor), skilled still reaching 60+ in 23.5% of runs.**
+**To change:** the unlock block in `SimConfig.cs`; `unlockMirrored` is the one that matters.
+
+**D-057 — The fuse shortens half again as fast, but the first bomb is untouched.**
+`fusePerPass` 0.06 → 0.09 and `fuseMin` 0.95 → 0.80, so the floor arrives at pass 25 instead of 34.
+`fuseStart` stays at 3.0 s on purpose: a first bomb that is already hurried teaches the player
+nothing, and the squeeze is supposed to be something the run does to you, not something it opens
+with. On its own this moved the average median by nothing and the mean by half a pass — its real
+work is late, where it cuts the skilled profile's mean from 46.6 to 44.4 and more than doubles the
+dawdling profile's fuse-ran-out deaths (92 → 217 in 400 runs).
+**Worth knowing: a RED HOT bomb carries half the fuse, so the tightest moment in the game is now
+0.40 s, down from 0.475 s.** That is the number to watch if the late game feels unfair in the hand,
+and `fuseMin` is the dial — 0.72 was also measured and holds the same median if you want it harder.
+**To change:** `fusePerPass` and `fuseMin` in `SimConfig.cs`.
+
+**D-058 — The throw and return speed-ups are a PACE change, and the bot cannot see them.**
+`flightPerPass` 0.0025 → 0.0035 with the floor 0.14 → 0.11, and `returnDelayPerPass` 0.01 → 0.014
+with the floor 0.20 → 0.15. Applied on their own these produce numbers **identical to the baseline
+to four significant figures** — same median, same mean, same deaths — because they compress the
+dead time between turns, and the bot's reaction and reading clocks only run while the bomb is in
+its hands. What they do change is throughput: the frame-perfect bot completes 963 passes in the
+900-second cap instead of 727. So they are reported as what they are — the run gets denser and a
+real player gets less recovery time between turns, which the bot has no fatigue model for — rather
+than being credited with any of the median drop. Mean run length fell 55.7 s → 42.0 s.
+**To change:** the flight and return blocks in `SimConfig.cs`.
+
+**D-059 — The green band was not touched, and the knock-on is stated rather than hidden.**
+`bandLow`, `bandHighStart`, `bandHighEnd` and `bandNarrowOverPasses` are unchanged. Note that the
+band is a *fraction* of the fuse, so a shorter fuse makes the PERFECT window narrower in real time
+even though the band itself is untouched — at the floor it is now about 96 ms instead of 114 ms.
+Missing it costs points, never a life, so this raises the difficulty of the scoring ceiling and not
+of survival.
+
+**D-060 — Two new target tests, because the wide band would have hidden a drift back.**
+`BalanceTarget_AverageDiesBetween15And35Passes` still guards the band the game must never leave.
+`BalanceTarget_Stage4_AverageMedianIsFifteenToEighteen` guards the point inside it that was actually
+chosen, and `BalanceTarget_Stage4_SkilledReachesSixtyOftenEnough` states the ceiling as a **reach**
+(at least 1 run in 10) rather than a best-of, because a single lucky maximum can clear 60 while the
+ceiling is in practice unreachable. **To change:** both in `BalanceTests.cs`.
+
+**D-061 — Three spec tests were updated and a missing fourth was written.**
+`Fuse_RampMatchesSpec` and `ReturnDelay_RampMatchesSpec` restated the old per-pass values and
+failed, which is exactly their job; they now state the new ones. `Flight_RampMatchesSpec` **did not
+exist** — the fuse and return ramps either side of it were pinned and the flight ramp was not, so
+`flightPerPass` and `flightMin` could be changed with nothing to catch a typo. It exists now.
+`Instrument_WrongSideBot_DiesToABlockerOnceBlockersExist` hard-coded "pass 5"; it now reads
+`blockerRampStartPass` from the config, because the assertion is about the rule and not the number.
+
+**D-062 — Tuning was searched in a standalone harness and confirmed in-editor.**
+`Assets/Scripts/Sim` has `noEngineReferences: true`, so the whole simulation compiles and runs
+outside Unity. `D:\KT\ShiftIt\tune\harness` is a small dotnet console project that **compiles the
+real Sim sources — not copies** — and runs the same sweep with the same seed series as
+`BalanceTests`. That turned a several-minute Unity round trip into about a second, which is what
+made it affordable to sweep every dial separately and find that `unlockMirrored` was the one doing
+the work. It is a search tool only: every number it picked was then confirmed by the in-editor
+suite, which stays the authority. The harness lives on D: and is not part of the repo.
+
+**D-063 — The itch zip now has a tool, and the tool refuses a stale build.**
+Stage 3 made the zip by hand. `Tools/make_itch_zip.py` writes it with `index.html` at the archive
+root (a folder at the root is the difference between a playable page and a blank one), reads the
+finished archive back rather than trusting the write, and **refuses to pack a build older than the
+newest gameplay source file** — the exact failure where a rebuild is reported but the zip carries
+yesterday's game. The refusal was tested against a deliberately backdated build, not just assumed.
+
+**D-064 — The before/after sheet for a balance change is numbers, not screenshots.**
+`Tools/before_after.py` pairs captured images, which is right for art and proves nothing here: a
+difficulty retune moves nothing a screenshot can show, and photographing the same two robots twice
+would look like evidence while being none. `Tools/balance_sheet.py` draws what actually changed —
+the distribution of 2000 simulated runs per side, the fuse curve, and the twist ladder.
+
+**D-065 — The new numbers were read back out of the running WebGL build.**
+The balance JSON is LZ4-packed inside `WebGL.data`, so grepping the shipped file for the values
+does not work — and "the source says 0.09" is not evidence about the build. The play-session driver
+now traces the fuse length the running game reports at each pass count. The shipped build reports a
+slope of **0.0900 s per pass** to a **0.80 s** floor, first HOT bomb at pass 13 and first MIRRORED
+turn at pass 15. Hot and normal bombs are traced separately, because a HOT bomb carries half the
+fuse and mixing the two printed one curve with wild dropouts that read as a broken tool.
+**To change:** `traceFuse` / `reportFuseTrace` in `Tools/webgl_play_session.js`.
+
+**D-066 — The itch page's twist table was updated with the ladder.**
+`Docs/ITCH_PAGE.md` listed the old unlock passes. A store page that tells players shields start at
+pass 5 when they start at 3 is simply wrong, so the table now matches the build, and the run-length
+line reads forty seconds rather than a minute.
